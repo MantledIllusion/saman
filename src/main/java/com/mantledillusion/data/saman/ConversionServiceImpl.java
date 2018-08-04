@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.mantledillusion.data.saman.exception.ConversionException;
+import com.mantledillusion.data.saman.exception.NoConverterException;
 
 class ConversionServiceImpl implements ConversionService {
 
@@ -50,8 +51,7 @@ class ConversionServiceImpl implements ConversionService {
 			} while (workType != Object.class);
 		}
 
-		throw new RuntimeException("No converter for " + source.getClass().getSimpleName()
-				+ " or any of its super types when converting to the target type " + targetType.getSimpleName());
+		throw new NoConverterException(sourceType, targetType);
 	}
 
 	// ############################################################################################################
