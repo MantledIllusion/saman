@@ -1,6 +1,6 @@
 package com.mantledillusion.data.saman.exception;
 
-import com.mantledillusion.data.saman.Converter;
+import com.mantledillusion.data.saman.interfaces.Converter;
 
 /**
  * {@link Exception} that is used to wrap any type of {@link Exception} that is

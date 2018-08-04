@@ -1,33 +1,20 @@
 package com.mantledillusion.data.saman;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
-import org.apache.commons.lang3.reflect.TypeUtils;
+import com.mantledillusion.data.saman.interfaces.Converter;
 
-import com.mantledillusion.data.saman.exception.ConversionException;
-
-public class ConversionService {
-
-	private interface ConversionFunction<S, T> {
-
-		T convert(S s, ConversionService service) throws Exception;
-	}
-
-	private final Map<Class<?>, Map<Class<?>, ConversionFunction<?, ?>>> converterRegistry;
-
-	private ConversionService(Map<Class<?>, Map<Class<?>, ConversionFunction<?, ?>>> converterRegistry) {
-		this.converterRegistry = converterRegistry;
-	}
+/**
+ * Interfaces for a service holding a pool of {@link Converter}s that it can
+ * delegate specific conversions to.
+ */
+public interface ConversionService {
 
 	// ############################################################################################################
 	// ############################################# SINGLE INSTANCES #############################################
@@ -49,12 +36,9 @@ public class ConversionService {
 	 *         possibly null if the conversion's result is null
 	 */
 	@SuppressWarnings("unchecked")
-	public <SourceType, TargetType> TargetType convert(SourceType source, Class<TargetType> targetType) {
-		if (source == null) {
-			return null;
-		} else {
-			return convertStrictly((Class<? super SourceType>) source.getClass(), source, targetType);
-		}
+	public default <SourceType, TargetType> TargetType convert(SourceType source, Class<TargetType> targetType) {
+		return source == null ? null
+				: convertStrictly((Class<? super SourceType>) source.getClass(), source, targetType);
 	}
 
 	/**
@@ -72,7 +56,8 @@ public class ConversionService {
 	 * @return The converted target object, might be null if the conversion's result
 	 *         is null
 	 */
-	public <SourceType, TargetType> TargetType convertNull(Class<SourceType> sourceType, Class<TargetType> targetType) {
+	public default <SourceType, TargetType> TargetType convertNull(Class<SourceType> sourceType,
+			Class<TargetType> targetType) {
 		return convertStrictly(sourceType, null, targetType);
 	}
 
@@ -101,34 +86,8 @@ public class ConversionService {
 	 * @return The converted target object, might be null if the conversion's result
 	 *         is null
 	 */
-	@SuppressWarnings("unchecked")
 	public <SourceType, TargetType> TargetType convertStrictly(Class<SourceType> sourceType, SourceType source,
-			Class<TargetType> targetType) {
-		if (sourceType == null) {
-			throw new IllegalArgumentException("Cannot convert using a null source type.");
-		} else if (targetType == null) {
-			throw new IllegalArgumentException("Cannot convert using a null target type.");
-		}
-
-		Class<? super SourceType> workType = sourceType;
-		if (this.converterRegistry.containsKey(targetType)) {
-			Map<Class<?>, ConversionFunction<?, ?>> targetTypeConverters = this.converterRegistry.get(targetType);
-			do {
-				if (targetTypeConverters.containsKey(workType)) {
-					try {
-						return ((ConversionFunction<SourceType, TargetType>) targetTypeConverters.get(workType))
-								.convert(source, this);
-					} catch (Exception e) {
-						throw new ConversionException(e);
-					}
-				}
-				workType = workType.getSuperclass();
-			} while (workType != Object.class);
-		}
-
-		throw new RuntimeException("No converter for " + source.getClass().getSimpleName()
-				+ " or any of its super types when converting to the target type " + targetType.getSimpleName());
-	}
+			Class<TargetType> targetType);
 
 	// ############################################################################################################
 	// ############################################### COLLECTIONS ################################################
@@ -152,7 +111,7 @@ public class ConversionService {
 	 * @return The converted target objects, might be null if the given source
 	 *         object list was null
 	 */
-	public <SourceType, TargetType> List<TargetType> convertList(List<SourceType> source,
+	public default <SourceType, TargetType> List<TargetType> convertList(List<SourceType> source,
 			Class<TargetType> targetType) {
 		return source == null ? null : convertInto(source, new ArrayList<>(), targetType);
 	}
@@ -175,7 +134,8 @@ public class ConversionService {
 	 * @return The converted target objects, might be null if the given source
 	 *         object set was null
 	 */
-	public <SourceType, TargetType> Set<TargetType> convertSet(Set<SourceType> source, Class<TargetType> targetType) {
+	public default <SourceType, TargetType> Set<TargetType> convertSet(Set<SourceType> source,
+			Class<TargetType> targetType) {
 		return source == null ? null : convertInto(source, new HashSet<>(), targetType);
 	}
 
@@ -205,14 +165,7 @@ public class ConversionService {
 	 *         collection was null
 	 */
 	public <SourceType, SourceCollectionType extends Collection<SourceType>, TargetCollectionType extends Collection<TargetType>, TargetType> TargetCollectionType convertInto(
-			SourceCollectionType source, TargetCollectionType target, Class<TargetType> targetType) {
-		if (source != null && target != null) {
-			for (SourceType sourceElement : source) {
-				target.add(convert(sourceElement, targetType));
-			}
-		}
-		return target;
-	}
+			SourceCollectionType source, TargetCollectionType target, Class<TargetType> targetType);
 
 	/**
 	 * Converts the given list of source objects to a new list of target objects
@@ -236,7 +189,7 @@ public class ConversionService {
 	 * @return The converted target objects, might be null if the given source
 	 *         object list was null
 	 */
-	public <SourceType, TargetType> List<TargetType> convertListStrictly(Class<SourceType> sourceType,
+	public default <SourceType, TargetType> List<TargetType> convertListStrictly(Class<SourceType> sourceType,
 			List<SourceType> source, Class<TargetType> targetType) {
 		return source == null ? null : convertStrictlyInto(sourceType, source, new ArrayList<>(), targetType);
 	}
@@ -263,7 +216,7 @@ public class ConversionService {
 	 * @return The converted target objects, might be null if the given source
 	 *         object set was null
 	 */
-	public <SourceType, TargetType> Set<TargetType> convertSetStrictly(Class<SourceType> sourceType,
+	public default <SourceType, TargetType> Set<TargetType> convertSetStrictly(Class<SourceType> sourceType,
 			Set<SourceType> source, Class<TargetType> targetType) {
 		return source == null ? null : convertStrictlyInto(sourceType, source, new HashSet<>(), targetType);
 	}
@@ -298,22 +251,14 @@ public class ConversionService {
 	 */
 	public <SourceType, SourceCollectionType extends Collection<SourceType>, TargetCollectionType extends Collection<TargetType>, TargetType> TargetCollectionType convertStrictlyInto(
 			Class<SourceType> sourceType, SourceCollectionType source, TargetCollectionType target,
-			Class<TargetType> targetType) {
-		if (source != null && target != null) {
-			for (SourceType sourceElement : source) {
-				target.add(convertStrictly(sourceType, sourceElement, targetType));
-			}
-		}
-		return target;
-	}
+			Class<TargetType> targetType);
 
 	// ############################################################################################################
 	// ################################################### MAP ####################################################
 	// ############################################################################################################
 
 	/**
-	 * Converts the given map of source objects into the given collection of target
-	 * objects.
+	 * Converts the given list of source objects to a new map of target objects.
 	 * <p>
 	 * Uses {@link #convert(Object, Class)}.
 	 * 
@@ -337,23 +282,49 @@ public class ConversionService {
 	 * @return The converted target objects, might be null if the given source
 	 *         object set was null
 	 */
-	public <SourceTypeKey, SourceTypeValue, TargetTypeKey, TargetTypeValue> Map<TargetTypeKey, TargetTypeValue> convertMap(
+	public default <SourceTypeKey, SourceTypeValue, TargetTypeKey, TargetTypeValue> Map<TargetTypeKey, TargetTypeValue> convertMap(
 			Map<SourceTypeKey, SourceTypeValue> source, Class<TargetTypeKey> targetTypeKey,
 			Class<TargetTypeValue> targetTypeValue) {
-		Map<TargetTypeKey, TargetTypeValue> target = null;
-		if (source != null) {
-			target = new HashMap<>();
-			for (Entry<SourceTypeKey, SourceTypeValue> entry : source.entrySet()) {
-				target.put(convert(entry.getKey(), targetTypeKey), convert(entry.getValue(), targetTypeValue));
-			}
-		}
-		return target;
+		return source == null ? null : convertInto(source, new HashMap<>(), targetTypeKey, targetTypeValue);
 	}
 
 	/**
 	 * Converts the given map of source objects into the given collection of target
-	 * objects ensuring that a converter of the given source/target type is called
-	 * even if the source element is null.
+	 * objects.
+	 * <p>
+	 * Uses {@link #convert(Object, Class)}.
+	 * 
+	 * @param <SourceTypeKey>
+	 *            The source type of the key elements
+	 * @param <SourceTypeValue>
+	 *            The source type of the value elements
+	 * @param <TargetTypeKey>
+	 *            The target type of the key elements
+	 * @param <TargetTypeValue>
+	 *            The target type of the value elements
+	 * @param source
+	 *            The map of source objects to convert; might be null, although in
+	 *            this case null is returned.
+	 * @param target
+	 *            The target map of objects to convert into; might be null although
+	 *            in this case null is returned.
+	 * @param targetTypeKey
+	 *            The type to convert all of the source key objects to; might
+	 *            <b>not</b> be null.
+	 * @param targetTypeValue
+	 *            The type to convert all of the source value objects to; might
+	 *            <b>not</b> be null.
+	 * @return The converted target objects, might be null if the given source
+	 *         object set was null
+	 */
+	public <SourceTypeKey, SourceTypeValue, TargetTypeKey, TargetTypeValue> Map<TargetTypeKey, TargetTypeValue> convertInto(
+			Map<SourceTypeKey, SourceTypeValue> source, Map<TargetTypeKey, TargetTypeValue> target,
+			Class<TargetTypeKey> targetTypeKey, Class<TargetTypeValue> targetTypeValue);
+
+	/**
+	 * Converts the given map of source objects to a new map of target objects
+	 * ensuring that a converter of the given source/target type is called even if
+	 * the source element is null.
 	 * <p>
 	 * Uses {@link #convertStrictly(Class, Object, Class)};
 	 * 
@@ -381,20 +352,53 @@ public class ConversionService {
 	 * @return The converted target objects, might be null if the given source
 	 *         object set was null
 	 */
-	public <SourceTypeKey, SourceTypeValue, TargetTypeKey, TargetTypeValue> Map<TargetTypeKey, TargetTypeValue> convertMapStrictly(
+	public default <SourceTypeKey, SourceTypeValue, TargetTypeKey, TargetTypeValue> Map<TargetTypeKey, TargetTypeValue> convertMapStrictly(
 			Class<SourceTypeKey> sourceTypeKey, Class<SourceTypeValue> sourceTypeValue,
 			Map<SourceTypeKey, SourceTypeValue> source, Class<TargetTypeKey> targetTypeKey,
 			Class<TargetTypeValue> targetTypeValue) {
-		Map<TargetTypeKey, TargetTypeValue> target = null;
-		if (source != null) {
-			target = new HashMap<>();
-			for (Entry<SourceTypeKey, SourceTypeValue> entry : source.entrySet()) {
-				target.put(convertStrictly(sourceTypeKey, entry.getKey(), targetTypeKey),
-						convertStrictly(sourceTypeValue, entry.getValue(), targetTypeValue));
-			}
-		}
-		return target;
+		return source == null ? null
+				: convertStrictlyInto(sourceTypeKey, sourceTypeValue, source, new HashMap<>(), targetTypeKey,
+						targetTypeValue);
 	}
+
+	/**
+	 * Converts the given map of source objects into the given collection of target
+	 * objects ensuring that a converter of the given source/target type is called
+	 * even if the source element is null.
+	 * <p>
+	 * Uses {@link #convertStrictly(Class, Object, Class)};
+	 * 
+	 * @param <SourceTypeKey>
+	 *            The source type of the key elements
+	 * @param <SourceTypeValue>
+	 *            The source type of the value elements
+	 * @param <TargetTypeKey>
+	 *            The target type of the key elements
+	 * @param <TargetTypeValue>
+	 *            The target type of the value elements
+	 * @param sourceTypeKey
+	 *            The source key type to convert; might <b>not</b> be null.
+	 * @param sourceTypeValue
+	 *            The source value type to convert; might <b>not</b> be null.
+	 * @param source
+	 *            The map of source objects to convert; might be null, although in
+	 *            this case null is returned.
+	 * @param target
+	 *            The target map of objects to convert into; might be null although
+	 *            in this case null is returned.
+	 * @param targetTypeKey
+	 *            The type to convert all of the source key objects to; might
+	 *            <b>not</b> be null.
+	 * @param targetTypeValue
+	 *            The type to convert all of the source value objects to; might
+	 *            <b>not</b> be null.
+	 * @return The converted target objects, might be null if the given source
+	 *         object set was null
+	 */
+	public <SourceTypeKey, SourceTypeValue, TargetTypeKey, TargetTypeValue> Map<TargetTypeKey, TargetTypeValue> convertStrictlyInto(
+			Class<SourceTypeKey> sourceTypeKey, Class<SourceTypeValue> sourceTypeValue,
+			Map<SourceTypeKey, SourceTypeValue> source, Map<TargetTypeKey, TargetTypeValue> target,
+			Class<TargetTypeKey> targetTypeKey, Class<TargetTypeValue> targetTypeValue);
 
 	// ############################################################################################################
 	// ################################################# SPECIAL ##################################################
@@ -417,12 +421,7 @@ public class ConversionService {
 	 *         null otherwise
 	 */
 	public <SourceType extends Enum<SourceType>, TargetType extends Enum<TargetType>> TargetType convertNamed(
-			SourceType source, Class<TargetType> targetType) {
-		if (targetType == null) {
-			throw new IllegalArgumentException("Cannot convert using a null target type.");
-		}
-		return source == null ? null : Enum.valueOf(targetType, source.name());
-	}
+			SourceType source, Class<TargetType> targetType);
 
 	/**
 	 * Converts the given enumerated source object using its ordinal.
@@ -441,66 +440,5 @@ public class ConversionService {
 	 *         null otherwise
 	 */
 	public <SourceType extends Enum<SourceType>, TargetType extends Enum<TargetType>> TargetType convertOrdinal(
-			SourceType source, Class<TargetType> targetType) {
-		if (targetType == null) {
-			throw new IllegalArgumentException("Cannot convert using a null target type.");
-		} else if (source != null && targetType.getEnumConstants().length >= source.ordinal()) {
-			throw new IllegalArgumentException("The source value '" + source.name() + "'s ordinal " + source.ordinal()
-					+ " is out of range for the target type '" + targetType.getSimpleName() + "'s ordinal range (0|"
-					+ targetType.getEnumConstants().length + ").");
-		}
-		return source == null ? null : targetType.getEnumConstants()[source.ordinal()];
-	}
-
-	// ############################################################################################################
-	// ############################################# SERVICE CREATION #############################################
-	// ############################################################################################################
-
-	/**
-	 * Factory method.
-	 * <p>
-	 * Creates a new {@link ConversionService} of the given {@link Converter}s.
-	 * 
-	 * @param <SourceType>
-	 *            The source type to convert from
-	 * @param <TargetType>
-	 *            The target type to convert to
-	 * @param converters
-	 *            The {@link Converter}s to build the {@link ConversionService}
-	 *            from; might be null or empty.
-	 * @return A new {@link ConversionService} instance, never null
-	 */
-	public static <SourceType, TargetType> ConversionService of(Collection<Converter<?, ?>> converters) {
-		Map<Class<?>, Map<Class<?>, ConversionFunction<?, ?>>> converterRegistry = new HashMap<>();
-
-		if (converters != null) {
-			for (Converter<?, ?> converter : converters) {
-				Map<TypeVariable<?>, Type> types = TypeUtils.getTypeArguments(converter.getClass(), Converter.class);
-				Class<?> sourceType = validateConverterTypeParameter(types.get(Converter.class.getTypeParameters()[0]));
-				Class<?> targetType = validateConverterTypeParameter(types.get(Converter.class.getTypeParameters()[1]));
-
-				if (!converterRegistry.containsKey(targetType)) {
-					converterRegistry.put(targetType, new HashMap<>());
-				}
-
-				@SuppressWarnings("unchecked")
-				Converter<SourceType, TargetType> typedConverter = (Converter<SourceType, TargetType>) converter;
-				ConversionFunction<SourceType, TargetType> function = (source, conversionService) -> typedConverter
-						.toTarget(source, conversionService);
-				converterRegistry.get(targetType).put(sourceType, function);
-			}
-		}
-
-		return new ConversionService(converterRegistry);
-	}
-
-	private static Class<?> validateConverterTypeParameter(Type typeParameter) {
-		if (typeParameter instanceof Class) {
-			return (Class<?>) typeParameter;
-		} else if (typeParameter instanceof ParameterizedType) {
-			return (Class<?>) ((ParameterizedType) typeParameter).getRawType();
-		} else {
-			throw new RuntimeException("Wrong converter generic param type");
-		}
-	}
+			SourceType source, Class<TargetType> targetType);
 }
