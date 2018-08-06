@@ -28,8 +28,7 @@ public interface Synchronizer<SourceType, TargetType> extends Converter<SourceTy
 		if (target != null) {
 			toTarget(source, target, service);
 		}
-		persistTarget(target, source);
-		return target;
+		return persistTarget(target, source);
 	}
 
 	/**
@@ -67,10 +66,12 @@ public interface Synchronizer<SourceType, TargetType> extends Converter<SourceTy
 	 *            The target that has been synchronized into; might be null.
 	 * @param source
 	 *            The source that has been synchronized from; might be null.
+	 * @return The persisted target which might have changed due to persisting,
+	 *         might be null
 	 * @throws Exception
 	 *             Any type of {@link Exception} the persisting might cause.
 	 */
-	default void persistTarget(TargetType target, SourceType source) throws Exception {
-		// No operation by default
+	default TargetType persistTarget(TargetType target, SourceType source) throws Exception {
+		return target; // No operation by default
 	}
 }

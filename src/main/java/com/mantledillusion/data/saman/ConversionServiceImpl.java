@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.mantledillusion.data.saman.exception.ConversionException;
+import com.mantledillusion.data.saman.exception.ConverterException;
 import com.mantledillusion.data.saman.exception.NoConverterException;
 
 class ConversionServiceImpl implements ConversionService {
@@ -21,6 +22,14 @@ class ConversionServiceImpl implements ConversionService {
 		this.converterRegistry = converterRegistry;
 	}
 
+	private <SourceType, TargetType> TargetType execute(ConversionFunction<SourceType, TargetType> function, SourceType source) {
+		try {
+			return function.convert(source, this);
+		} catch (Exception e) {
+			throw new ConverterException(e);
+		}
+	}
+	
 	// ############################################################################################################
 	// ############################################# SINGLE INSTANCES #############################################
 	// ############################################################################################################
@@ -30,9 +39,13 @@ class ConversionServiceImpl implements ConversionService {
 	public <SourceType, TargetType> TargetType convertStrictly(Class<SourceType> sourceType, SourceType source,
 			Class<TargetType> targetType) {
 		if (sourceType == null) {
-			throw new IllegalArgumentException("Cannot convert using a null source type.");
+			throw new ConversionException("Cannot convert using a null source type.");
 		} else if (targetType == null) {
-			throw new IllegalArgumentException("Cannot convert using a null target type.");
+			throw new ConversionException("Cannot convert using a null target type.");
+		}
+
+		if (sourceType.equals(targetType)) {
+			return (TargetType) source;
 		}
 
 		Class<? super SourceType> workType = sourceType;
@@ -40,12 +53,7 @@ class ConversionServiceImpl implements ConversionService {
 			Map<Class<?>, ConversionFunction<?, ?>> targetTypeConverters = this.converterRegistry.get(targetType);
 			do {
 				if (targetTypeConverters.containsKey(workType)) {
-					try {
-						return ((ConversionFunction<SourceType, TargetType>) targetTypeConverters.get(workType))
-								.convert(source, this);
-					} catch (Exception e) {
-						throw new ConversionException(e);
-					}
+					return execute((ConversionFunction<SourceType, TargetType>) targetTypeConverters.get(workType), source);
 				}
 				workType = workType.getSuperclass();
 			} while (workType != Object.class);
@@ -90,7 +98,6 @@ class ConversionServiceImpl implements ConversionService {
 			Map<SourceTypeKey, SourceTypeValue> source, Map<TargetTypeKey, TargetTypeValue> target,
 			Class<TargetTypeKey> targetTypeKey, Class<TargetTypeValue> targetTypeValue) {
 		if (source != null && target != null) {
-			target = new HashMap<>();
 			for (Entry<SourceTypeKey, SourceTypeValue> entry : source.entrySet()) {
 				target.put(convert(entry.getKey(), targetTypeKey), convert(entry.getValue(), targetTypeValue));
 			}
@@ -104,7 +111,6 @@ class ConversionServiceImpl implements ConversionService {
 			Map<SourceTypeKey, SourceTypeValue> source, Map<TargetTypeKey, TargetTypeValue> target,
 			Class<TargetTypeKey> targetTypeKey, Class<TargetTypeValue> targetTypeValue) {
 		if (source != null && target != null) {
-			target = new HashMap<>();
 			for (Entry<SourceTypeKey, SourceTypeValue> entry : source.entrySet()) {
 				target.put(convertStrictly(sourceTypeKey, entry.getKey(), targetTypeKey),
 						convertStrictly(sourceTypeValue, entry.getValue(), targetTypeValue));
@@ -118,24 +124,79 @@ class ConversionServiceImpl implements ConversionService {
 	// ############################################################################################################
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <SourceType extends Enum<SourceType>, TargetType extends Enum<TargetType>> TargetType convertNamed(
 			SourceType source, Class<TargetType> targetType) {
 		if (targetType == null) {
-			throw new IllegalArgumentException("Cannot convert using a null target type.");
+			throw new ConversionException("Cannot convert using a null target type.");
 		}
-		return source == null ? null : Enum.valueOf(targetType, source.name());
+		
+		if (source == null) {
+			return null;
+		} else {
+			Class<SourceType> sourceType = source.getDeclaringClass();
+
+			if (!this.converterRegistry.containsKey(sourceType)) {
+				this.converterRegistry.put(sourceType, new HashMap<>());
+			}
+			ConversionFunction<SourceType, TargetType> function;
+			if (!this.converterRegistry.get(sourceType).containsKey(targetType)) {
+				for (SourceType value : sourceType.getEnumConstants()) {
+					try {
+						Enum.valueOf(targetType, value.name());
+					} catch (IllegalArgumentException e) {
+						throw new ConversionException("The type '" + sourceType.getSimpleName() + "' cannot be mapped to '"
+								+ targetType.getSimpleName() + "' by name; there is at least one enum value ('"
+								+ value.name() + "') where there is no equally named value in the target enum type.");
+					}
+				}
+
+				function = (sourceValue, conversionService) -> sourceValue == null ? null
+						: Enum.valueOf(targetType, sourceValue.name());
+				this.converterRegistry.get(sourceType).put(targetType, function);
+			} else {
+				function = (ConversionFunction<SourceType, TargetType>) this.converterRegistry.get(sourceType)
+						.get(targetType);
+			}
+
+			return execute(function, source);
+		}
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <SourceType extends Enum<SourceType>, TargetType extends Enum<TargetType>> TargetType convertOrdinal(
 			SourceType source, Class<TargetType> targetType) {
 		if (targetType == null) {
-			throw new IllegalArgumentException("Cannot convert using a null target type.");
-		} else if (source != null && targetType.getEnumConstants().length >= source.ordinal()) {
-			throw new IllegalArgumentException("The source value '" + source.name() + "'s ordinal " + source.ordinal()
-					+ " is out of range for the target type '" + targetType.getSimpleName() + "'s ordinal range (0|"
-					+ targetType.getEnumConstants().length + ").");
+			throw new ConversionException("Cannot convert using a null target type.");
 		}
-		return source == null ? null : targetType.getEnumConstants()[source.ordinal()];
+		
+		if (source == null) {
+			return null;
+		} else {
+			Class<SourceType> sourceType = source.getDeclaringClass();
+
+			if (!this.converterRegistry.containsKey(sourceType)) {
+				this.converterRegistry.put(sourceType, new HashMap<>());
+			}
+			ConversionFunction<SourceType, TargetType> function;
+			if (!this.converterRegistry.get(sourceType).containsKey(targetType)) {
+				if (sourceType.getEnumConstants().length != targetType.getEnumConstants().length) {
+					throw new ConversionException("The type '" + sourceType.getSimpleName() + "' cannot be mapped to '"
+							+ targetType.getSimpleName()
+							+ "' by ordinal; the amount of enum values are differing between source/target enum type: ("
+							+ sourceType.getEnumConstants().length + "|" + targetType.getEnumConstants().length + ").");
+				}
+
+				function = (sourceValue, conversionService) -> sourceValue == null ? null
+						: targetType.getEnumConstants()[sourceValue.ordinal()];
+				this.converterRegistry.get(sourceType).put(targetType, function);
+			} else {
+				function = (ConversionFunction<SourceType, TargetType>) this.converterRegistry.get(sourceType)
+						.get(targetType);
+			}
+
+			return execute(function, source);
+		}
 	}
 }

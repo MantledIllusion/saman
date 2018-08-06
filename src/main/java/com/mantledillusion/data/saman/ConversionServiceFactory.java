@@ -12,6 +12,7 @@ import org.apache.commons.lang3.reflect.TypeUtils;
 
 import com.mantledillusion.data.saman.ConversionServiceImpl.ConversionFunction;
 import com.mantledillusion.data.saman.exception.AmbiguousConverterException;
+import com.mantledillusion.data.saman.exception.ConverterTypeException;
 import com.mantledillusion.data.saman.interfaces.BiConverter;
 import com.mantledillusion.data.saman.interfaces.Converter;
 
@@ -64,8 +65,8 @@ public class ConversionServiceFactory {
 			for (Converter<?, ?> converter : converters) {
 				if (converter != null) {
 					Map<TypeVariable<?>, Type> types = TypeUtils.getTypeArguments(converter.getClass(), Converter.class);
-					Class<?> sourceType = validateConverterTypeParameter(types.get(Converter.class.getTypeParameters()[0]));
-					Class<?> targetType = validateConverterTypeParameter(types.get(Converter.class.getTypeParameters()[1]));
+					Class<?> sourceType = validateConverterTypeParameter(converter, types.get(Converter.class.getTypeParameters()[0]));
+					Class<?> targetType = validateConverterTypeParameter(converter, types.get(Converter.class.getTypeParameters()[1]));
 
 					@SuppressWarnings("unchecked")
 					Converter<SourceType, TargetType> toTargetConverter = (Converter<SourceType, TargetType>) converter;
@@ -88,13 +89,13 @@ public class ConversionServiceFactory {
 		return new ConversionServiceImpl(converterRegistry);
 	}
 
-	private static Class<?> validateConverterTypeParameter(Type typeParameter) {
+	private static Class<?> validateConverterTypeParameter(Converter<?, ?> converter, Type typeParameter) {
 		if (typeParameter instanceof Class) {
 			return (Class<?>) typeParameter;
 		} else if (typeParameter instanceof ParameterizedType) {
 			return (Class<?>) ((ParameterizedType) typeParameter).getRawType();
 		} else {
-			throw new RuntimeException("Wrong converter generic param type");
+			throw new ConverterTypeException(converter);
 		}
 	}
 	
