@@ -1,7 +1,7 @@
 package com.mantledillusion.data.saman.interfaces;
 
 import com.mantledillusion.data.saman.ProcessingService;
-import com.mantledillusion.data.saman.ProcessingServiceFactory.BiProcessor;
+import com.mantledillusion.data.saman.ProcessingService.BiProcessor;
 
 /**
  * Interface for {@link BiSynchronizer}s.
@@ -9,17 +9,17 @@ import com.mantledillusion.data.saman.ProcessingServiceFactory.BiProcessor;
  * A {@link BiSynchronizer} is a specialized {@link Synchronizer} extension that
  * is also able to handle the back synchronization.
  * <p>
- * While {@link #fetchTarget(Object)} has to be overridden for the
- * {@link BiSynchronizer} to be able to retrieve the target object to
- * synchronize into, {@link #persistTarget(Object, Object)} may only be
- * overridden if additional steps are necessary to persist the synchronized
- * changes to the target object.
+ * While {@link #fetchTarget(Object, ProcessingService)} has to be overridden
+ * for the {@link BiSynchronizer} to be able to retrieve the target object to
+ * synchronize into, {@link #persistTarget(Object, Object, ProcessingService)}
+ * may only be overridden if additional steps are necessary to persist the
+ * synchronized changes to the target object.
  * <p>
- * While {@link #fetchSource(Object)} has to be overridden for the
- * {@link BiSynchronizer} to be able to retrieve the source object to
- * synchronize into, {@link #persistSource(Object, Object)} may only be
- * overridden if additional steps are necessary to persist the synchronized
- * changes to the source object.
+ * While {@link #fetchSource(Object, ProcessingService)} has to be overridden
+ * for the {@link BiSynchronizer} to be able to retrieve the source object to
+ * synchronize into, {@link #persistSource(Object, Object, ProcessingService)}
+ * may only be overridden if additional steps are necessary to persist the
+ * synchronized changes to the source object.
  *
  * @param <SourceType>
  *            The source type to synchronize from

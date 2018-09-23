@@ -1,6 +1,6 @@
 package com.mantledillusion.data.saman.exception;
 
-import com.mantledillusion.data.saman.ProcessingServiceFactory.Processor;
+import javax.annotation.processing.Processor;
 
 /**
  * {@link RuntimeException} that might be thrown if 2 or more {@link Processor}s

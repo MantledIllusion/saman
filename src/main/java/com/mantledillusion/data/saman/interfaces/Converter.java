@@ -1,7 +1,7 @@
 package com.mantledillusion.data.saman.interfaces;
 
 import com.mantledillusion.data.saman.ProcessingService;
-import com.mantledillusion.data.saman.ProcessingServiceFactory.Processor;
+import com.mantledillusion.data.saman.ProcessingService.Processor;
 
 /**
  * An interface for {@link Converter}s.

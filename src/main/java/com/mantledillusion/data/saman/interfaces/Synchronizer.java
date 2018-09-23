@@ -1,20 +1,20 @@
 package com.mantledillusion.data.saman.interfaces;
 
 import com.mantledillusion.data.saman.ProcessingService;
-import com.mantledillusion.data.saman.ProcessingServiceFactory.Processor;
+import com.mantledillusion.data.saman.ProcessingService.Processor;
 
 /**
  * Interface for {@link Synchronizer}s.
  * <p>
- * A {@link Synchronizer} is a specialized {@link Processor} extension that
+ * A {@link Synchronizer} is a specialized {@link ProcessingService.Processor} extension that
  * synchronizes a source object's values into an already existing target object
  * instead of creating a new target object instance.
  * <p>
- * While {@link #fetchTarget(Object)} has to be overridden for the
- * {@link Synchronizer} to be able to retrieve the target object to synchronize
- * into, {@link #persistTarget(Object, Object)} may only be overridden if
- * additional steps are necessary to persist the synchronized changes to the
- * target object.
+ * While {@link #fetchTarget(Object, ProcessingService)} has to be overridden
+ * for the {@link Synchronizer} to be able to retrieve the target object to
+ * synchronize into, {@link #persistTarget(Object, Object, ProcessingService)}
+ * may only be overridden if additional steps are necessary to persist the
+ * synchronized changes to the target object.
  *
  * @param <SourceType>
  *            The source type to synchronize from

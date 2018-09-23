@@ -1,6 +1,6 @@
 package com.mantledillusion.data.saman.exception;
 
-import com.mantledillusion.data.saman.ProcessingServiceFactory.Processor;
+import com.mantledillusion.data.saman.ProcessingService.Processor;
 
 /**
  * {@link RuntimeException} that might be thrown when trying to define a

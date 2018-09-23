@@ -7,18 +7,17 @@ import java.util.Map.Entry;
 
 import com.mantledillusion.data.saman.exception.ProcessingException;
 import com.mantledillusion.data.saman.exception.ProcessorException;
-import com.mantledillusion.data.saman.ProcessingServiceFactory.Processor;
 import com.mantledillusion.data.saman.exception.NoProcessorException;
 
 class ProcessingServiceImpl implements ProcessingService {
 
-	private final Map<Class<?>, Map<Class<?>, Processor<?, ?>>> processorRegistry;
+	private final Map<Class<?>, Map<Class<?>, ProcessingService.Processor<?, ?>>> processorRegistry;
 
-	ProcessingServiceImpl(Map<Class<?>, Map<Class<?>, Processor<?, ?>>> processorRegistry) {
+	ProcessingServiceImpl(Map<Class<?>, Map<Class<?>, ProcessingService.Processor<?, ?>>> processorRegistry) {
 		this.processorRegistry = processorRegistry;
 	}
 
-	private <SourceType, TargetType> TargetType execute(Processor<SourceType, TargetType> processor, SourceType source) {
+	private <SourceType, TargetType> TargetType execute(ProcessingService.Processor<SourceType, TargetType> processor, SourceType source) {
 		try {
 			return processor.process(source, this);
 		} catch (Exception e) {
@@ -46,10 +45,10 @@ class ProcessingServiceImpl implements ProcessingService {
 
 		Class<? super SourceType> workType = sourceType;
 		if (this.processorRegistry.containsKey(targetType)) {
-			Map<Class<?>, Processor<?, ?>> targetTypeProcessors = this.processorRegistry.get(targetType);
+			Map<Class<?>, ProcessingService.Processor<?, ?>> targetTypeProcessors = this.processorRegistry.get(targetType);
 			do {
 				if (targetTypeProcessors.containsKey(workType)) {
-					return execute((Processor<SourceType, TargetType>) targetTypeProcessors.get(workType), source);
+					return execute((ProcessingService.Processor<SourceType, TargetType>) targetTypeProcessors.get(workType), source);
 				}
 				workType = workType.getSuperclass();
 			} while (workType != Object.class);
@@ -135,7 +134,7 @@ class ProcessingServiceImpl implements ProcessingService {
 			if (!this.processorRegistry.containsKey(sourceType)) {
 				this.processorRegistry.put(sourceType, new HashMap<>());
 			}
-			Processor<SourceType, TargetType> function;
+			ProcessingService.Processor<SourceType, TargetType> function;
 			if (!this.processorRegistry.get(sourceType).containsKey(targetType)) {
 				for (SourceType value : sourceType.getEnumConstants()) {
 					try {
@@ -151,7 +150,7 @@ class ProcessingServiceImpl implements ProcessingService {
 						: Enum.valueOf(targetType, sourceValue.name());
 				this.processorRegistry.get(sourceType).put(targetType, function);
 			} else {
-				function = (Processor<SourceType, TargetType>) this.processorRegistry.get(sourceType)
+				function = (ProcessingService.Processor<SourceType, TargetType>) this.processorRegistry.get(sourceType)
 						.get(targetType);
 			}
 
@@ -175,7 +174,7 @@ class ProcessingServiceImpl implements ProcessingService {
 			if (!this.processorRegistry.containsKey(sourceType)) {
 				this.processorRegistry.put(sourceType, new HashMap<>());
 			}
-			Processor<SourceType, TargetType> function;
+			ProcessingService.Processor<SourceType, TargetType> function;
 			if (!this.processorRegistry.get(sourceType).containsKey(targetType)) {
 				if (sourceType.getEnumConstants().length != targetType.getEnumConstants().length) {
 					throw new ProcessingException("The type '" + sourceType.getSimpleName() + "' cannot be mapped to '"
@@ -188,7 +187,7 @@ class ProcessingServiceImpl implements ProcessingService {
 						: targetType.getEnumConstants()[sourceValue.ordinal()];
 				this.processorRegistry.get(sourceType).put(targetType, function);
 			} else {
-				function = (Processor<SourceType, TargetType>) this.processorRegistry.get(sourceType)
+				function = (ProcessingService.Processor<SourceType, TargetType>) this.processorRegistry.get(sourceType)
 						.get(targetType);
 			}
 

@@ -1,7 +1,7 @@
 package com.mantledillusion.data.saman.interfaces;
 
 import com.mantledillusion.data.saman.ProcessingService;
-import com.mantledillusion.data.saman.ProcessingServiceFactory.BiProcessor;
+import com.mantledillusion.data.saman.ProcessingService.BiProcessor;
 
 /**
  * An interface for {@link BiConverter}s.

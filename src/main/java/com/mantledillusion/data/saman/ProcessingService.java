@@ -14,6 +14,16 @@ import java.util.Set;
  */
 public interface ProcessingService {
 
+	public interface Processor<SourceType, TargetType> {
+	
+		TargetType process(SourceType source, ProcessingService service) throws Exception;
+	}
+
+	public interface BiProcessor<SourceType, TargetType> extends Processor<SourceType, TargetType> {
+	
+		SourceType reverse(TargetType target, ProcessingService service) throws Exception;
+	}
+
 	// ############################################################################################################
 	// ############################################# SINGLE INSTANCES #############################################
 	// ############################################################################################################
