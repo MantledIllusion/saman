@@ -5,28 +5,24 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.mantledillusion.data.saman.exception.ConversionException;
-import com.mantledillusion.data.saman.exception.ConverterException;
-import com.mantledillusion.data.saman.exception.NoConverterException;
+import com.mantledillusion.data.saman.exception.ProcessingException;
+import com.mantledillusion.data.saman.exception.ProcessorException;
+import com.mantledillusion.data.saman.ProcessingServiceFactory.Processor;
+import com.mantledillusion.data.saman.exception.NoProcessorException;
 
-class ConversionServiceImpl implements ConversionService {
+class ProcessingServiceImpl implements ProcessingService {
 
-	interface ConversionFunction<S, T> {
+	private final Map<Class<?>, Map<Class<?>, Processor<?, ?>>> processorRegistry;
 
-		T convert(S s, ConversionServiceImpl service) throws Exception;
+	ProcessingServiceImpl(Map<Class<?>, Map<Class<?>, Processor<?, ?>>> processorRegistry) {
+		this.processorRegistry = processorRegistry;
 	}
 
-	private final Map<Class<?>, Map<Class<?>, ConversionFunction<?, ?>>> converterRegistry;
-
-	ConversionServiceImpl(Map<Class<?>, Map<Class<?>, ConversionFunction<?, ?>>> converterRegistry) {
-		this.converterRegistry = converterRegistry;
-	}
-
-	private <SourceType, TargetType> TargetType execute(ConversionFunction<SourceType, TargetType> function, SourceType source) {
+	private <SourceType, TargetType> TargetType execute(Processor<SourceType, TargetType> processor, SourceType source) {
 		try {
-			return function.convert(source, this);
+			return processor.process(source, this);
 		} catch (Exception e) {
-			throw new ConverterException(e);
+			throw new ProcessorException(e);
 		}
 	}
 	
@@ -36,12 +32,12 @@ class ConversionServiceImpl implements ConversionService {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public <SourceType, TargetType> TargetType convertStrictly(Class<SourceType> sourceType, SourceType source,
+	public <SourceType, TargetType> TargetType processStrictly(Class<SourceType> sourceType, SourceType source,
 			Class<TargetType> targetType) {
 		if (sourceType == null) {
-			throw new ConversionException("Cannot convert using a null source type.");
+			throw new ProcessingException("Cannot process using a null source type.");
 		} else if (targetType == null) {
-			throw new ConversionException("Cannot convert using a null target type.");
+			throw new ProcessingException("Cannot process using a null target type.");
 		}
 
 		if (sourceType.equals(targetType)) {
@@ -49,17 +45,17 @@ class ConversionServiceImpl implements ConversionService {
 		}
 
 		Class<? super SourceType> workType = sourceType;
-		if (this.converterRegistry.containsKey(targetType)) {
-			Map<Class<?>, ConversionFunction<?, ?>> targetTypeConverters = this.converterRegistry.get(targetType);
+		if (this.processorRegistry.containsKey(targetType)) {
+			Map<Class<?>, Processor<?, ?>> targetTypeProcessors = this.processorRegistry.get(targetType);
 			do {
-				if (targetTypeConverters.containsKey(workType)) {
-					return execute((ConversionFunction<SourceType, TargetType>) targetTypeConverters.get(workType), source);
+				if (targetTypeProcessors.containsKey(workType)) {
+					return execute((Processor<SourceType, TargetType>) targetTypeProcessors.get(workType), source);
 				}
 				workType = workType.getSuperclass();
 			} while (workType != Object.class);
 		}
 
-		throw new NoConverterException(sourceType, targetType);
+		throw new NoProcessorException(sourceType, targetType);
 	}
 
 	// ############################################################################################################
@@ -67,23 +63,23 @@ class ConversionServiceImpl implements ConversionService {
 	// ############################################################################################################
 
 	@Override
-	public <SourceType, SourceCollectionType extends Collection<SourceType>, TargetCollectionType extends Collection<TargetType>, TargetType> TargetCollectionType convertInto(
+	public <SourceType, SourceCollectionType extends Collection<SourceType>, TargetCollectionType extends Collection<TargetType>, TargetType> TargetCollectionType processInto(
 			SourceCollectionType source, TargetCollectionType target, Class<TargetType> targetType) {
 		if (source != null && target != null) {
 			for (SourceType sourceElement : source) {
-				target.add(convert(sourceElement, targetType));
+				target.add(process(sourceElement, targetType));
 			}
 		}
 		return target;
 	}
 
 	@Override
-	public <SourceType, SourceCollectionType extends Collection<SourceType>, TargetCollectionType extends Collection<TargetType>, TargetType> TargetCollectionType convertStrictlyInto(
+	public <SourceType, SourceCollectionType extends Collection<SourceType>, TargetCollectionType extends Collection<TargetType>, TargetType> TargetCollectionType processStrictlyInto(
 			Class<SourceType> sourceType, SourceCollectionType source, TargetCollectionType target,
 			Class<TargetType> targetType) {
 		if (source != null && target != null) {
 			for (SourceType sourceElement : source) {
-				target.add(convertStrictly(sourceType, sourceElement, targetType));
+				target.add(processStrictly(sourceType, sourceElement, targetType));
 			}
 		}
 		return target;
@@ -94,26 +90,26 @@ class ConversionServiceImpl implements ConversionService {
 	// ############################################################################################################
 
 	@Override
-	public <SourceTypeKey, SourceTypeValue, TargetTypeKey, TargetTypeValue> Map<TargetTypeKey, TargetTypeValue> convertInto(
+	public <SourceTypeKey, SourceTypeValue, TargetTypeKey, TargetTypeValue> Map<TargetTypeKey, TargetTypeValue> processInto(
 			Map<SourceTypeKey, SourceTypeValue> source, Map<TargetTypeKey, TargetTypeValue> target,
 			Class<TargetTypeKey> targetTypeKey, Class<TargetTypeValue> targetTypeValue) {
 		if (source != null && target != null) {
 			for (Entry<SourceTypeKey, SourceTypeValue> entry : source.entrySet()) {
-				target.put(convert(entry.getKey(), targetTypeKey), convert(entry.getValue(), targetTypeValue));
+				target.put(process(entry.getKey(), targetTypeKey), process(entry.getValue(), targetTypeValue));
 			}
 		}
 		return target;
 	}
 
 	@Override
-	public <SourceTypeKey, SourceTypeValue, TargetTypeKey, TargetTypeValue> Map<TargetTypeKey, TargetTypeValue> convertStrictlyInto(
+	public <SourceTypeKey, SourceTypeValue, TargetTypeKey, TargetTypeValue> Map<TargetTypeKey, TargetTypeValue> processStrictlyInto(
 			Class<SourceTypeKey> sourceTypeKey, Class<SourceTypeValue> sourceTypeValue,
 			Map<SourceTypeKey, SourceTypeValue> source, Map<TargetTypeKey, TargetTypeValue> target,
 			Class<TargetTypeKey> targetTypeKey, Class<TargetTypeValue> targetTypeValue) {
 		if (source != null && target != null) {
 			for (Entry<SourceTypeKey, SourceTypeValue> entry : source.entrySet()) {
-				target.put(convertStrictly(sourceTypeKey, entry.getKey(), targetTypeKey),
-						convertStrictly(sourceTypeValue, entry.getValue(), targetTypeValue));
+				target.put(processStrictly(sourceTypeKey, entry.getKey(), targetTypeKey),
+						processStrictly(sourceTypeValue, entry.getValue(), targetTypeValue));
 			}
 		}
 		return target;
@@ -125,10 +121,10 @@ class ConversionServiceImpl implements ConversionService {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public <SourceType extends Enum<SourceType>, TargetType extends Enum<TargetType>> TargetType convertNamed(
+	public <SourceType extends Enum<SourceType>, TargetType extends Enum<TargetType>> TargetType processNamed(
 			SourceType source, Class<TargetType> targetType) {
 		if (targetType == null) {
-			throw new ConversionException("Cannot convert using a null target type.");
+			throw new ProcessingException("Cannot process using a null target type.");
 		}
 		
 		if (source == null) {
@@ -136,26 +132,26 @@ class ConversionServiceImpl implements ConversionService {
 		} else {
 			Class<SourceType> sourceType = source.getDeclaringClass();
 
-			if (!this.converterRegistry.containsKey(sourceType)) {
-				this.converterRegistry.put(sourceType, new HashMap<>());
+			if (!this.processorRegistry.containsKey(sourceType)) {
+				this.processorRegistry.put(sourceType, new HashMap<>());
 			}
-			ConversionFunction<SourceType, TargetType> function;
-			if (!this.converterRegistry.get(sourceType).containsKey(targetType)) {
+			Processor<SourceType, TargetType> function;
+			if (!this.processorRegistry.get(sourceType).containsKey(targetType)) {
 				for (SourceType value : sourceType.getEnumConstants()) {
 					try {
 						Enum.valueOf(targetType, value.name());
 					} catch (IllegalArgumentException e) {
-						throw new ConversionException("The type '" + sourceType.getSimpleName() + "' cannot be mapped to '"
+						throw new ProcessingException("The type '" + sourceType.getSimpleName() + "' cannot be mapped to '"
 								+ targetType.getSimpleName() + "' by name; there is at least one enum value ('"
 								+ value.name() + "') where there is no equally named value in the target enum type.");
 					}
 				}
 
-				function = (sourceValue, conversionService) -> sourceValue == null ? null
+				function = (sourceValue, processingService) -> sourceValue == null ? null
 						: Enum.valueOf(targetType, sourceValue.name());
-				this.converterRegistry.get(sourceType).put(targetType, function);
+				this.processorRegistry.get(sourceType).put(targetType, function);
 			} else {
-				function = (ConversionFunction<SourceType, TargetType>) this.converterRegistry.get(sourceType)
+				function = (Processor<SourceType, TargetType>) this.processorRegistry.get(sourceType)
 						.get(targetType);
 			}
 
@@ -165,10 +161,10 @@ class ConversionServiceImpl implements ConversionService {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public <SourceType extends Enum<SourceType>, TargetType extends Enum<TargetType>> TargetType convertOrdinal(
+	public <SourceType extends Enum<SourceType>, TargetType extends Enum<TargetType>> TargetType processOrdinal(
 			SourceType source, Class<TargetType> targetType) {
 		if (targetType == null) {
-			throw new ConversionException("Cannot convert using a null target type.");
+			throw new ProcessingException("Cannot process using a null target type.");
 		}
 		
 		if (source == null) {
@@ -176,23 +172,23 @@ class ConversionServiceImpl implements ConversionService {
 		} else {
 			Class<SourceType> sourceType = source.getDeclaringClass();
 
-			if (!this.converterRegistry.containsKey(sourceType)) {
-				this.converterRegistry.put(sourceType, new HashMap<>());
+			if (!this.processorRegistry.containsKey(sourceType)) {
+				this.processorRegistry.put(sourceType, new HashMap<>());
 			}
-			ConversionFunction<SourceType, TargetType> function;
-			if (!this.converterRegistry.get(sourceType).containsKey(targetType)) {
+			Processor<SourceType, TargetType> function;
+			if (!this.processorRegistry.get(sourceType).containsKey(targetType)) {
 				if (sourceType.getEnumConstants().length != targetType.getEnumConstants().length) {
-					throw new ConversionException("The type '" + sourceType.getSimpleName() + "' cannot be mapped to '"
+					throw new ProcessingException("The type '" + sourceType.getSimpleName() + "' cannot be mapped to '"
 							+ targetType.getSimpleName()
 							+ "' by ordinal; the amount of enum values are differing between source/target enum type: ("
 							+ sourceType.getEnumConstants().length + "|" + targetType.getEnumConstants().length + ").");
 				}
 
-				function = (sourceValue, conversionService) -> sourceValue == null ? null
+				function = (sourceValue, processingService) -> sourceValue == null ? null
 						: targetType.getEnumConstants()[sourceValue.ordinal()];
-				this.converterRegistry.get(sourceType).put(targetType, function);
+				this.processorRegistry.get(sourceType).put(targetType, function);
 			} else {
-				function = (ConversionFunction<SourceType, TargetType>) this.converterRegistry.get(sourceType)
+				function = (Processor<SourceType, TargetType>) this.processorRegistry.get(sourceType)
 						.get(targetType);
 			}
 

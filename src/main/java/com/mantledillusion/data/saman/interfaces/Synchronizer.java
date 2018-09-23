@@ -1,11 +1,12 @@
 package com.mantledillusion.data.saman.interfaces;
 
-import com.mantledillusion.data.saman.ConversionService;
+import com.mantledillusion.data.saman.ProcessingService;
+import com.mantledillusion.data.saman.ProcessingServiceFactory.Processor;
 
 /**
  * Interface for {@link Synchronizer}s.
  * <p>
- * A {@link Synchronizer} is a specialized {@link Converter} extension that
+ * A {@link Synchronizer} is a specialized {@link Processor} extension that
  * synchronizes a source object's values into an already existing target object
  * instead of creating a new target object instance.
  * <p>
@@ -20,15 +21,15 @@ import com.mantledillusion.data.saman.ConversionService;
  * @param <TargetType>
  *            The target type to synchronize to
  */
-public interface Synchronizer<SourceType, TargetType> extends Converter<SourceType, TargetType> {
+public interface Synchronizer<SourceType, TargetType> extends Processor<SourceType, TargetType> {
 
 	@Override
-	default TargetType toTarget(SourceType source, ConversionService service) throws Exception {
-		TargetType target = fetchTarget(source);
+	default TargetType process(SourceType source, ProcessingService service) throws Exception {
+		TargetType target = fetchTarget(source, service);
 		if (target != null) {
 			toTarget(source, target, service);
 		}
-		return persistTarget(target, source);
+		return persistTarget(target, source, service);
 	}
 
 	/**
@@ -36,11 +37,16 @@ public interface Synchronizer<SourceType, TargetType> extends Converter<SourceTy
 	 * 
 	 * @param source
 	 *            The source to map into the returned target; might be null.
+	 * @param service
+	 *            The calling {@link ProcessingService} instance that might be used
+	 *            as a callback if the conversion of sub objects of the given source
+	 *            might be performed by the service as well; might <b>not</b> be
+	 *            null.
 	 * @return The target to map the source into, might be null
 	 * @throws Exception
 	 *             Any type of {@link Exception} the fetching might cause.
 	 */
-	TargetType fetchTarget(SourceType source) throws Exception;
+	TargetType fetchTarget(SourceType source, ProcessingService service) throws Exception;
 
 	/**
 	 * Synchronizes the given source's values into the given target.
@@ -50,14 +56,14 @@ public interface Synchronizer<SourceType, TargetType> extends Converter<SourceTy
 	 * @param target
 	 *            The target to synchronize into; might <b>not</b> be null.
 	 * @param service
-	 *            The calling {@link ConversionService} instance that might be used
+	 *            The calling {@link ProcessingService} instance that might be used
 	 *            as a callback if the conversion of sub objects of the given source
 	 *            might be performed by the service as well; might <b>not</b> be
 	 *            null.
 	 * @throws Exception
 	 *             Any type of {@link Exception} the synchronization might cause.
 	 */
-	void toTarget(SourceType source, TargetType target, ConversionService service) throws Exception;
+	void toTarget(SourceType source, TargetType target, ProcessingService service) throws Exception;
 
 	/**
 	 * Persists the target synchronized into from the given source.
@@ -66,12 +72,17 @@ public interface Synchronizer<SourceType, TargetType> extends Converter<SourceTy
 	 *            The target that has been synchronized into; might be null.
 	 * @param source
 	 *            The source that has been synchronized from; might be null.
+	 * @param service
+	 *            The calling {@link ProcessingService} instance that might be used
+	 *            as a callback if the conversion of sub objects of the given source
+	 *            might be performed by the service as well; might <b>not</b> be
+	 *            null.
 	 * @return The persisted target which might have changed due to persisting,
 	 *         might be null
 	 * @throws Exception
 	 *             Any type of {@link Exception} the persisting might cause.
 	 */
-	default TargetType persistTarget(TargetType target, SourceType source) throws Exception {
+	default TargetType persistTarget(TargetType target, SourceType source, ProcessingService service) throws Exception {
 		return target; // No operation by default
 	}
 }

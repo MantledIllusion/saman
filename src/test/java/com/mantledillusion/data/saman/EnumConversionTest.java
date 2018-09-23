@@ -3,7 +3,7 @@ package com.mantledillusion.data.saman;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.mantledillusion.data.saman.exception.ConversionException;
+import com.mantledillusion.data.saman.exception.ProcessingException;
 
 import static org.junit.Assert.*;
 
@@ -40,52 +40,52 @@ public class EnumConversionTest {
 		THIRD;
 	}
 
-	private ConversionService service;
+	private ProcessingService service;
 	
 	@Before
 	public void before() {
-		this.service = ConversionServiceFactory.of();
+		this.service = ProcessingServiceFactory.of();
 	}
 	
 	@Test
 	public void testConversionByName() {
-		assertSame(TargetNameEnum.A, this.service.convertNamed(SourceEnum.A, TargetNameEnum.class));
-		assertSame(TargetNameEnum.A, this.service.convertNamed(SourceEnum.A, TargetNameEnum.class)); // TO MAKE SURE CACHED CONVERTER IS USED
+		assertSame(TargetNameEnum.A, this.service.processNamed(SourceEnum.A, TargetNameEnum.class));
+		assertSame(TargetNameEnum.A, this.service.processNamed(SourceEnum.A, TargetNameEnum.class)); // TO MAKE SURE CACHED CONVERTER IS USED
 	}
 	
 	@Test
 	public void testNullConversionByName() {
-		assertNull(this.service.convertNamed(null, TargetNameEnum.class));
+		assertNull(this.service.processNamed(null, TargetNameEnum.class));
 	}
 	
-	@Test(expected=ConversionException.class)
+	@Test(expected=ProcessingException.class)
 	public void testConversionByNameWithoutType() {
-		this.service.convertNamed(SourceEnum.A, null);
+		this.service.processNamed(SourceEnum.A, null);
 	}
 	
-	@Test(expected=ConversionException.class)
+	@Test(expected=ProcessingException.class)
 	public void testConversionByWrongName() {
-		this.service.convertNamed(SourceEnum.A, TargetWrongNameEnum.class);
+		this.service.processNamed(SourceEnum.A, TargetWrongNameEnum.class);
 	}
 	
 	@Test
 	public void testConversionByOrdinal() {
-		assertSame(TargetOrdinalEnum.SECOND, this.service.convertOrdinal(SourceEnum.B, TargetOrdinalEnum.class));
-		assertSame(TargetOrdinalEnum.SECOND, this.service.convertOrdinal(SourceEnum.B, TargetOrdinalEnum.class)); // TO MAKE SURE CACHED CONVERTER IS USED
+		assertSame(TargetOrdinalEnum.SECOND, this.service.processOrdinal(SourceEnum.B, TargetOrdinalEnum.class));
+		assertSame(TargetOrdinalEnum.SECOND, this.service.processOrdinal(SourceEnum.B, TargetOrdinalEnum.class)); // TO MAKE SURE CACHED CONVERTER IS USED
 	}
 	
 	@Test
 	public void testNullConversionByOrdinal() {
-		assertNull(this.service.convertOrdinal(null, TargetNameEnum.class));
+		assertNull(this.service.processOrdinal(null, TargetNameEnum.class));
 	}
 	
-	@Test(expected=ConversionException.class)
+	@Test(expected=ProcessingException.class)
 	public void testConversionByOrdinalWithoutType() {
-		this.service.convertOrdinal(SourceEnum.A, null);
+		this.service.processOrdinal(SourceEnum.A, null);
 	}
 
-	@Test(expected=ConversionException.class)
+	@Test(expected=ProcessingException.class)
 	public void testConversionByWrongOrdinal() {
-		this.service.convertOrdinal(SourceEnum.B, TargetWrongOrdinalEnum.class);
+		this.service.processOrdinal(SourceEnum.B, TargetWrongOrdinalEnum.class);
 	}
 }

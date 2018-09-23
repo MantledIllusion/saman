@@ -1,6 +1,7 @@
 package com.mantledillusion.data.saman.interfaces;
 
-import com.mantledillusion.data.saman.ConversionService;
+import com.mantledillusion.data.saman.ProcessingService;
+import com.mantledillusion.data.saman.ProcessingServiceFactory.BiProcessor;
 
 /**
  * An interface for {@link BiConverter}s.
@@ -13,15 +14,20 @@ import com.mantledillusion.data.saman.ConversionService;
  * @param <TargetType>
  *            The target type to convert to
  */
-public interface BiConverter<SourceType, TargetType> extends Converter<SourceType, TargetType> {
+public interface BiConverter<SourceType, TargetType> extends Converter<SourceType, TargetType>, BiProcessor<SourceType, TargetType> {
 
+	@Override
+	default SourceType reverse(TargetType target, ProcessingService service) throws Exception {
+		return toSource(target, service);
+	}
+	
 	/**
 	 * Converts the given target back to a source.
 	 * 
 	 * @param target
 	 *            The target to convert; might be null.
 	 * @param service
-	 *            The calling {@link ConversionService} instance that might be used
+	 *            The calling {@link ProcessingService} instance that might be used
 	 *            as a callback if the conversion of sub objects of the given source
 	 *            might be performed by the service as well; might <b>not</b> be
 	 *            null.
@@ -29,5 +35,5 @@ public interface BiConverter<SourceType, TargetType> extends Converter<SourceTyp
 	 * @throws Exception
 	 *             Any type of {@link Exception} the conversion might cause.
 	 */
-	SourceType toSource(TargetType target, ConversionService service) throws Exception;
+	SourceType toSource(TargetType target, ProcessingService service) throws Exception;
 }

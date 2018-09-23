@@ -1,6 +1,7 @@
 package com.mantledillusion.data.saman.interfaces;
 
-import com.mantledillusion.data.saman.ConversionService;
+import com.mantledillusion.data.saman.ProcessingService;
+import com.mantledillusion.data.saman.ProcessingServiceFactory.BiProcessor;
 
 /**
  * Interface for {@link BiSynchronizer}s.
@@ -26,15 +27,15 @@ import com.mantledillusion.data.saman.ConversionService;
  *            The target type to synchronize to
  */
 public interface BiSynchronizer<SourceType, TargetType>
-		extends Synchronizer<SourceType, TargetType>, BiConverter<SourceType, TargetType> {
+		extends Synchronizer<SourceType, TargetType>, BiProcessor<SourceType, TargetType> {
 
 	@Override
-	default SourceType toSource(TargetType target, ConversionService service) throws Exception {
-		SourceType source = fetchSource(target);
+	default SourceType reverse(TargetType target, ProcessingService service) throws Exception {
+		SourceType source = fetchSource(target, service);
 		if (source != null) {
 			toSource(target, source, service);
 		}
-		return persistSource(source, target);
+		return persistSource(source, target, service);
 	}
 
 	/**
@@ -43,10 +44,15 @@ public interface BiSynchronizer<SourceType, TargetType>
 	 * @param target
 	 *            The target to synchronize into the returned source; might be null.
 	 * @return The source to synchronize the target into, might be null
+	 * @param service
+	 *            The calling {@link ProcessingService} instance that might be used
+	 *            as a callback if the conversion of sub objects of the given source
+	 *            might be performed by the service as well; might <b>not</b> be
+	 *            null.
 	 * @throws Exception
 	 *             Any type of {@link Exception} the fetching might cause.
 	 */
-	SourceType fetchSource(TargetType target) throws Exception;
+	SourceType fetchSource(TargetType target, ProcessingService service) throws Exception;
 
 	/**
 	 * Synchronizes the given target's values into the given source.
@@ -56,14 +62,14 @@ public interface BiSynchronizer<SourceType, TargetType>
 	 * @param source
 	 *            The source to synchronize into; might <b>not</b> be null.
 	 * @param service
-	 *            The calling {@link ConversionService} instance that might be used
+	 *            The calling {@link ProcessingService} instance that might be used
 	 *            as a callback if the conversion of sub objects of the given source
 	 *            might be performed by the service as well; might <b>not</b> be
 	 *            null.
 	 * @throws Exception
 	 *             Any type of {@link Exception} the synchronization might cause.
 	 */
-	void toSource(TargetType target, SourceType source, ConversionService service) throws Exception;
+	void toSource(TargetType target, SourceType source, ProcessingService service) throws Exception;
 
 	/**
 	 * Persists the source synchronized into from the given target.
@@ -72,12 +78,17 @@ public interface BiSynchronizer<SourceType, TargetType>
 	 *            The source that has been synchronized into; might be null.
 	 * @param target
 	 *            The target that has been synchronized from; might be null.
+	 * @param service
+	 *            The calling {@link ProcessingService} instance that might be used
+	 *            as a callback if the conversion of sub objects of the given source
+	 *            might be performed by the service as well; might <b>not</b> be
+	 *            null.
 	 * @return The persisted source which might have changed due to persisting,
 	 *         might be null
 	 * @throws Exception
 	 *             Any type of {@link Exception} the persisting might cause.
 	 */
-	default SourceType persistSource(SourceType source, TargetType target) throws Exception {
+	default SourceType persistSource(SourceType source, TargetType target, ProcessingService service) throws Exception {
 		return source; // No operation by default
 	}
 }

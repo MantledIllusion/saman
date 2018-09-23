@@ -17,19 +17,19 @@ public class AbstractConversionTest {
 	protected static final TargetPojo TARGET_B = new TargetPojo(TEST_ID_B);
 	protected static final TargetPojo TARGET_NULL = new TargetPojo(null);
 
-	protected ConversionService service;
+	protected ProcessingService service;
 	
 	@Before
 	public void before() {
-		this.service = ConversionServiceFactory.of(new BiConverter<SourcePojo, TargetPojo>() {
+		this.service = ProcessingServiceFactory.of(new BiConverter<SourcePojo, TargetPojo>() {
 
 			@Override
-			public TargetPojo toTarget(SourcePojo source, ConversionService service) throws Exception {
+			public TargetPojo toTarget(SourcePojo source, ProcessingService service) throws Exception {
 				return new TargetPojo(source == null ? null : source.id);
 			}
 
 			@Override
-			public SourcePojo toSource(TargetPojo target, ConversionService service) throws Exception {
+			public SourcePojo toSource(TargetPojo target, ProcessingService service) throws Exception {
 				return new SourcePojo(target == null ? null : target.id);
 			}
 		});

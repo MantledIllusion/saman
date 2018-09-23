@@ -2,37 +2,37 @@ package com.mantledillusion.data.saman;
 
 import org.junit.Test;
 
-import com.mantledillusion.data.saman.exception.AmbiguousConverterException;
-import com.mantledillusion.data.saman.exception.ConverterTypeException;
+import com.mantledillusion.data.saman.exception.AmbiguousProcessorException;
+import com.mantledillusion.data.saman.exception.ProcessorTypeException;
 import com.mantledillusion.data.saman.interfaces.Converter;
 import com.mantledillusion.data.saman.obj.SourcePojo;
 import com.mantledillusion.data.saman.obj.TargetPojo;
 
 public class ConversionFactoryTest {
 
-	@Test(expected=AmbiguousConverterException.class)
+	@Test(expected=AmbiguousProcessorException.class)
 	public void testAmbiguousConverters() {
-		ConversionServiceFactory.of(new Converter<SourcePojo, TargetPojo>() {
+		ProcessingServiceFactory.of(new Converter<SourcePojo, TargetPojo>() {
 
 			@Override
-			public TargetPojo toTarget(SourcePojo source, ConversionService service) throws Exception {
+			public TargetPojo toTarget(SourcePojo source, ProcessingService service) throws Exception {
 				return null;
 			}
 		}, new Converter<SourcePojo, TargetPojo>() {
 
 			@Override
-			public TargetPojo toTarget(SourcePojo source, ConversionService service) throws Exception {
+			public TargetPojo toTarget(SourcePojo source, ProcessingService service) throws Exception {
 				return null;
 			}
 		});
 	}
 	
-	@Test(expected=ConverterTypeException.class)
+	@Test(expected=ProcessorTypeException.class)
 	public <T> void testUndefinedConverterGenerics() {
-		ConversionServiceFactory.of(new Converter<SourcePojo, T>() {
+		ProcessingServiceFactory.of(new Converter<SourcePojo, T>() {
 
 			@Override
-			public T toTarget(SourcePojo source, ConversionService service) throws Exception {
+			public T toTarget(SourcePojo source, ProcessingService service) throws Exception {
 				return null;
 			}
 		});

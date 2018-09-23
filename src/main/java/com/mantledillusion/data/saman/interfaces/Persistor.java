@@ -1,5 +1,7 @@
 package com.mantledillusion.data.saman.interfaces;
 
+import com.mantledillusion.data.saman.ProcessingService;
+
 /**
  * Interface for {@link Persistor}s.
  * <p>
@@ -12,10 +14,14 @@ package com.mantledillusion.data.saman.interfaces;
  * target object.
  *
  * @param <SourceType>
- *            The source type to synchronize from
+ *            The source type to synchronize from and convert to
  * @param <TargetType>
- *            The target type to synchronize to
+ *            The target type to synchronize to and convert from
  */
 public interface Persistor<SourceType, TargetType> extends Synchronizer<SourceType, TargetType>, BiConverter<SourceType, TargetType> {
-	
+
+	@Override
+	default TargetType process(SourceType source, ProcessingService service) throws Exception {
+		return Synchronizer.super.process(source, service);
+	}
 }

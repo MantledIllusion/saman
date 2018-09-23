@@ -1,5 +1,5 @@
 # saman
-Saman is a lightweight library for data conversion.
+Saman is a lightweight library for data processing like conversion, persisting or synchronizing.
 
 Albizia Saman, originally Samanea Saman and called 'árbol de la lluvia' ('The Rain Tree') 
 by locals is a plant originated in middle and south america. Besides its characteristic 

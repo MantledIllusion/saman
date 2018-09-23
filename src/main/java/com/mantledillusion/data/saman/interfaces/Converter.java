@@ -1,6 +1,7 @@
 package com.mantledillusion.data.saman.interfaces;
 
-import com.mantledillusion.data.saman.ConversionService;
+import com.mantledillusion.data.saman.ProcessingService;
+import com.mantledillusion.data.saman.ProcessingServiceFactory.Processor;
 
 /**
  * An interface for {@link Converter}s.
@@ -12,15 +13,20 @@ import com.mantledillusion.data.saman.ConversionService;
  * @param <TargetType>
  *            The target type to convert to
  */
-public interface Converter<SourceType, TargetType> {
+public interface Converter<SourceType, TargetType> extends Processor<SourceType, TargetType> {
 
+	@Override
+	default TargetType process(SourceType source, ProcessingService service) throws Exception {
+		return toTarget(source, service);
+	}
+	
 	/**
 	 * Converts the given source to a target.
 	 * 
 	 * @param source
 	 *            The source to convert; might be null.
 	 * @param service
-	 *            The calling {@link ConversionService} instance that might be used
+	 *            The calling {@link ProcessingService} instance that might be used
 	 *            as a callback if the conversion of sub objects of the given source
 	 *            might be performed by the service as well; might <b>not</b> be
 	 *            null.
@@ -28,5 +34,5 @@ public interface Converter<SourceType, TargetType> {
 	 * @throws Exception
 	 *             Any type of {@link Exception} the conversion might cause.
 	 */
-	TargetType toTarget(SourceType source, ConversionService service) throws Exception;
+	TargetType toTarget(SourceType source, ProcessingService service) throws Exception;
 }
