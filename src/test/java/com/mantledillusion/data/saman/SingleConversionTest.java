@@ -4,6 +4,7 @@ import org.junit.Test;
 
 import com.mantledillusion.data.saman.exception.ProcessingException;
 import com.mantledillusion.data.saman.exception.ProcessorException;
+import com.mantledillusion.data.saman.context.ProcessingContext;
 import com.mantledillusion.data.saman.exception.NoProcessorException;
 import com.mantledillusion.data.saman.interfaces.Converter;
 import com.mantledillusion.data.saman.obj.SourcePojo;
@@ -48,12 +49,12 @@ public class SingleConversionTest extends AbstractConversionTest {
 	
 	@Test(expected=ProcessorException.class)
 	public void testConversionException() {
-		ProcessingServiceFactory.of(new Converter<SourcePojo, TargetPojo>() {
+		new DefaultProcessingService(ProcessorRegistry.of(new Converter<SourcePojo, TargetPojo>() {
 
 			@Override
-			public TargetPojo toTarget(SourcePojo source, ProcessingService service) throws Exception {
+			public TargetPojo toTarget(SourcePojo source, ProcessingContext service) throws Exception {
 				throw new Exception();
 			}
-		}).process(SOURCE_A, TargetPojo.class);
+		})).process(SOURCE_A, TargetPojo.class);
 	}
 }

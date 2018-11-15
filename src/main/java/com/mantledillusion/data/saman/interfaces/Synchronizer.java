@@ -2,17 +2,18 @@ package com.mantledillusion.data.saman.interfaces;
 
 import com.mantledillusion.data.saman.ProcessingService;
 import com.mantledillusion.data.saman.ProcessingService.Processor;
+import com.mantledillusion.data.saman.context.ProcessingContext;
 
 /**
  * Interface for {@link Synchronizer}s.
  * <p>
- * A {@link Synchronizer} is a specialized {@link ProcessingService.Processor} extension that
- * synchronizes a source object's values into an already existing target object
- * instead of creating a new target object instance.
+ * A {@link Synchronizer} is a specialized {@link ProcessingService.Processor}
+ * extension that synchronizes a source object's values into an already existing
+ * target object instead of creating a new target object instance.
  * <p>
- * While {@link #fetchTarget(Object, ProcessingService)} has to be overridden
+ * While {@link #fetchTarget(Object, ProcessingContext)} has to be overridden
  * for the {@link Synchronizer} to be able to retrieve the target object to
- * synchronize into, {@link #persistTarget(Object, Object, ProcessingService)}
+ * synchronize into, {@link #persistTarget(Object, Object, ProcessingContext)}
  * may only be overridden if additional steps are necessary to persist the
  * synchronized changes to the target object.
  *
@@ -24,12 +25,12 @@ import com.mantledillusion.data.saman.ProcessingService.Processor;
 public interface Synchronizer<SourceType, TargetType> extends Processor<SourceType, TargetType> {
 
 	@Override
-	default TargetType process(SourceType source, ProcessingService service) throws Exception {
-		TargetType target = fetchTarget(source, service);
+	default TargetType process(SourceType source, ProcessingContext context) throws Exception {
+		TargetType target = fetchTarget(source, context);
 		if (target != null) {
-			toTarget(source, target, service);
+			toTarget(source, target, context);
 		}
-		return persistTarget(target, source, service);
+		return persistTarget(target, source, context);
 	}
 
 	/**
@@ -37,16 +38,16 @@ public interface Synchronizer<SourceType, TargetType> extends Processor<SourceTy
 	 * 
 	 * @param source
 	 *            The source to map into the returned target; might be null.
-	 * @param service
-	 *            The calling {@link ProcessingService} instance that might be used
-	 *            as a callback if the conversion of sub objects of the given source
-	 *            might be performed by the service as well; might <b>not</b> be
-	 *            null.
+	 * @param context
+	 *            The context of the calling {@link ProcessingService} instance that
+	 *            might be used as a callback if the conversion of sub objects of
+	 *            the given source might be performed by the service as well; might
+	 *            <b>not</b> be null.
 	 * @return The target to map the source into, might be null
 	 * @throws Exception
 	 *             Any type of {@link Exception} the fetching might cause.
 	 */
-	TargetType fetchTarget(SourceType source, ProcessingService service) throws Exception;
+	TargetType fetchTarget(SourceType source, ProcessingContext context) throws Exception;
 
 	/**
 	 * Synchronizes the given source's values into the given target.
@@ -55,15 +56,15 @@ public interface Synchronizer<SourceType, TargetType> extends Processor<SourceTy
 	 *            The source to synchronize; might be null.
 	 * @param target
 	 *            The target to synchronize into; might <b>not</b> be null.
-	 * @param service
-	 *            The calling {@link ProcessingService} instance that might be used
-	 *            as a callback if the conversion of sub objects of the given source
-	 *            might be performed by the service as well; might <b>not</b> be
-	 *            null.
+	 * @param context
+	 *            The context of the calling {@link ProcessingService} instance that
+	 *            might be used as a callback if the conversion of sub objects of
+	 *            the given source might be performed by the service as well; might
+	 *            <b>not</b> be null.
 	 * @throws Exception
 	 *             Any type of {@link Exception} the synchronization might cause.
 	 */
-	void toTarget(SourceType source, TargetType target, ProcessingService service) throws Exception;
+	void toTarget(SourceType source, TargetType target, ProcessingContext context) throws Exception;
 
 	/**
 	 * Persists the target synchronized into from the given source.
@@ -72,17 +73,17 @@ public interface Synchronizer<SourceType, TargetType> extends Processor<SourceTy
 	 *            The target that has been synchronized into; might be null.
 	 * @param source
 	 *            The source that has been synchronized from; might be null.
-	 * @param service
-	 *            The calling {@link ProcessingService} instance that might be used
-	 *            as a callback if the conversion of sub objects of the given source
-	 *            might be performed by the service as well; might <b>not</b> be
-	 *            null.
+	 * @param context
+	 *            The context of the calling {@link ProcessingService} instance that
+	 *            might be used as a callback if the conversion of sub objects of
+	 *            the given source might be performed by the service as well; might
+	 *            <b>not</b> be null.
 	 * @return The persisted target which might have changed due to persisting,
 	 *         might be null
 	 * @throws Exception
 	 *             Any type of {@link Exception} the persisting might cause.
 	 */
-	default TargetType persistTarget(TargetType target, SourceType source, ProcessingService service) throws Exception {
+	default TargetType persistTarget(TargetType target, SourceType source, ProcessingContext context) throws Exception {
 		return target; // No operation by default
 	}
 }

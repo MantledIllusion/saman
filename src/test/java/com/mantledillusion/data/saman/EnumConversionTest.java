@@ -44,7 +44,7 @@ public class EnumConversionTest {
 	
 	@Before
 	public void before() {
-		this.service = ProcessingServiceFactory.of();
+		this.service = new DefaultProcessingService(ProcessorRegistry.of());
 	}
 	
 	@Test

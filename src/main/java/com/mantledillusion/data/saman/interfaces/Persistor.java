@@ -1,6 +1,6 @@
 package com.mantledillusion.data.saman.interfaces;
 
-import com.mantledillusion.data.saman.ProcessingService;
+import com.mantledillusion.data.saman.context.ProcessingContext;
 
 /**
  * Interface for {@link Persistor}s.
@@ -8,9 +8,9 @@ import com.mantledillusion.data.saman.ProcessingService;
  * A {@link Persistor} is a combination of a {@link Synchronizer} from source to
  * target and a {@link Converter} from target to source.
  * <p>
- * While {@link #fetchTarget(Object, ProcessingService)} has to be overridden
+ * While {@link #fetchTarget(Object, ProcessingContext)} has to be overridden
  * for the {@link Synchronizer} to be able to retrieve the target object to
- * synchronize into, {@link #persistTarget(Object, Object, ProcessingService)}
+ * synchronize into, {@link #persistTarget(Object, Object, ProcessingContext)}
  * may only be overridden if additional steps are necessary to persist the
  * synchronized changes to the target object.
  *
@@ -23,7 +23,7 @@ public interface Persistor<SourceType, TargetType>
 		extends Synchronizer<SourceType, TargetType>, BiConverter<SourceType, TargetType> {
 
 	@Override
-	default TargetType process(SourceType source, ProcessingService service) throws Exception {
-		return Synchronizer.super.process(source, service);
+	default TargetType process(SourceType source, ProcessingContext context) throws Exception {
+		return Synchronizer.super.process(source, context);
 	}
 }

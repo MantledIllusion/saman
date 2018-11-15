@@ -1,30 +1,36 @@
 package com.mantledillusion.data.saman;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import com.mantledillusion.data.saman.exception.ProcessingException;
 import com.mantledillusion.data.saman.exception.ProcessorException;
-import com.mantledillusion.data.saman.exception.NoProcessorException;
+import com.mantledillusion.data.saman.context.ProcessingContext;
 
-class ProcessingServiceImpl implements ProcessingService {
+/**
+ * Reference implementation of {@link ProcessingService}.
+ */
+public class DefaultProcessingService implements ProcessingService {
 
-	private final Map<Class<?>, Map<Class<?>, ProcessingService.Processor<?, ?>>> processorRegistry;
+	private final ProcessorRegistry processorRegistry;
 
-	ProcessingServiceImpl(Map<Class<?>, Map<Class<?>, ProcessingService.Processor<?, ?>>> processorRegistry) {
+	public DefaultProcessingService(ProcessorRegistry processorRegistry) {
+		if (processorRegistry == null) {
+			throw new IllegalArgumentException("Cannot create a processing service with a null processor registry");
+		}
 		this.processorRegistry = processorRegistry;
 	}
 
-	private <SourceType, TargetType> TargetType execute(ProcessingService.Processor<SourceType, TargetType> processor, SourceType source) {
+	private <SourceType, TargetType> TargetType execute(ProcessingService.Processor<SourceType, TargetType> processor,
+			SourceType source) {
 		try {
-			return processor.process(source, this);
+			return processor.process(source, new ProcessingContext(this));
 		} catch (Exception e) {
 			throw new ProcessorException(e);
 		}
 	}
-	
+
 	// ############################################################################################################
 	// ############################################# SINGLE INSTANCES #############################################
 	// ############################################################################################################
@@ -43,18 +49,7 @@ class ProcessingServiceImpl implements ProcessingService {
 			return (TargetType) source;
 		}
 
-		Class<? super SourceType> workType = sourceType;
-		if (this.processorRegistry.containsKey(targetType)) {
-			Map<Class<?>, ProcessingService.Processor<?, ?>> targetTypeProcessors = this.processorRegistry.get(targetType);
-			do {
-				if (targetTypeProcessors.containsKey(workType)) {
-					return execute((ProcessingService.Processor<SourceType, TargetType>) targetTypeProcessors.get(workType), source);
-				}
-				workType = workType.getSuperclass();
-			} while (workType != Object.class);
-		}
-
-		throw new NoProcessorException(sourceType, targetType);
+		return execute(this.processorRegistry.identifyProcessor(sourceType, targetType), source);
 	}
 
 	// ############################################################################################################
@@ -119,79 +114,32 @@ class ProcessingServiceImpl implements ProcessingService {
 	// ############################################################################################################
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public <SourceType extends Enum<SourceType>, TargetType extends Enum<TargetType>> TargetType processNamed(
 			SourceType source, Class<TargetType> targetType) {
 		if (targetType == null) {
 			throw new ProcessingException("Cannot process using a null target type.");
 		}
-		
+
 		if (source == null) {
 			return null;
 		} else {
 			Class<SourceType> sourceType = source.getDeclaringClass();
-
-			if (!this.processorRegistry.containsKey(sourceType)) {
-				this.processorRegistry.put(sourceType, new HashMap<>());
-			}
-			ProcessingService.Processor<SourceType, TargetType> function;
-			if (!this.processorRegistry.get(sourceType).containsKey(targetType)) {
-				for (SourceType value : sourceType.getEnumConstants()) {
-					try {
-						Enum.valueOf(targetType, value.name());
-					} catch (IllegalArgumentException e) {
-						throw new ProcessingException("The type '" + sourceType.getSimpleName() + "' cannot be mapped to '"
-								+ targetType.getSimpleName() + "' by name; there is at least one enum value ('"
-								+ value.name() + "') where there is no equally named value in the target enum type.");
-					}
-				}
-
-				function = (sourceValue, processingService) -> sourceValue == null ? null
-						: Enum.valueOf(targetType, sourceValue.name());
-				this.processorRegistry.get(sourceType).put(targetType, function);
-			} else {
-				function = (ProcessingService.Processor<SourceType, TargetType>) this.processorRegistry.get(sourceType)
-						.get(targetType);
-			}
-
-			return execute(function, source);
+			return execute(this.processorRegistry.identifyNamedProcessor(sourceType, targetType), source);
 		}
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public <SourceType extends Enum<SourceType>, TargetType extends Enum<TargetType>> TargetType processOrdinal(
 			SourceType source, Class<TargetType> targetType) {
 		if (targetType == null) {
 			throw new ProcessingException("Cannot process using a null target type.");
 		}
-		
+
 		if (source == null) {
 			return null;
 		} else {
 			Class<SourceType> sourceType = source.getDeclaringClass();
-
-			if (!this.processorRegistry.containsKey(sourceType)) {
-				this.processorRegistry.put(sourceType, new HashMap<>());
-			}
-			ProcessingService.Processor<SourceType, TargetType> function;
-			if (!this.processorRegistry.get(sourceType).containsKey(targetType)) {
-				if (sourceType.getEnumConstants().length != targetType.getEnumConstants().length) {
-					throw new ProcessingException("The type '" + sourceType.getSimpleName() + "' cannot be mapped to '"
-							+ targetType.getSimpleName()
-							+ "' by ordinal; the amount of enum values are differing between source/target enum type: ("
-							+ sourceType.getEnumConstants().length + "|" + targetType.getEnumConstants().length + ").");
-				}
-
-				function = (sourceValue, processingService) -> sourceValue == null ? null
-						: targetType.getEnumConstants()[sourceValue.ordinal()];
-				this.processorRegistry.get(sourceType).put(targetType, function);
-			} else {
-				function = (ProcessingService.Processor<SourceType, TargetType>) this.processorRegistry.get(sourceType)
-						.get(targetType);
-			}
-
-			return execute(function, source);
+			return execute(this.processorRegistry.identifyOrdinalProcessor(sourceType, targetType), source);
 		}
 	}
 }

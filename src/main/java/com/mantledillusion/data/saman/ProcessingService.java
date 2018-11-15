@@ -8,20 +8,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.mantledillusion.data.saman.context.ProcessingContext;
+
 /**
- * Interfaces for a service holding a pool of {@link Processor}s that it can
+ * Base for a service holding a pool of {@link Processor}s that it can
  * delegate specific processings to.
  */
 public interface ProcessingService {
 
 	public interface Processor<SourceType, TargetType> {
 	
-		TargetType process(SourceType source, ProcessingService service) throws Exception;
+		TargetType process(SourceType source, ProcessingContext context) throws Exception;
 	}
 
 	public interface BiProcessor<SourceType, TargetType> extends Processor<SourceType, TargetType> {
 	
-		SourceType reverse(TargetType target, ProcessingService service) throws Exception;
+		SourceType reverse(TargetType target, ProcessingContext context) throws Exception;
 	}
 
 	// ############################################################################################################
@@ -44,7 +46,7 @@ public interface ProcessingService {
 	 *         possibly null if the {@link Processor}'s result is null
 	 */
 	@SuppressWarnings("unchecked")
-	public default <SourceType, TargetType> TargetType process(SourceType source, Class<TargetType> targetType) {
+	default <SourceType, TargetType> TargetType process(SourceType source, Class<TargetType> targetType) {
 		return source == null ? null
 				: processStrictly((Class<? super SourceType>) source.getClass(), source, targetType);
 	}
@@ -64,7 +66,7 @@ public interface ProcessingService {
 	 * @return The processed target object, might be null if the {@link Processor}'s result
 	 *         is null
 	 */
-	public default <SourceType, TargetType> TargetType processNull(Class<SourceType> sourceType,
+	default <SourceType, TargetType> TargetType processNull(Class<SourceType> sourceType,
 			Class<TargetType> targetType) {
 		return processStrictly(sourceType, null, targetType);
 	}
@@ -94,7 +96,7 @@ public interface ProcessingService {
 	 * @return The processed target object, might be null if the {@link Processor}'s result
 	 *         is null
 	 */
-	public <SourceType, TargetType> TargetType processStrictly(Class<SourceType> sourceType, SourceType source,
+	<SourceType, TargetType> TargetType processStrictly(Class<SourceType> sourceType, SourceType source,
 			Class<TargetType> targetType);
 
 	// ############################################################################################################
@@ -119,7 +121,7 @@ public interface ProcessingService {
 	 * @return The processed target objects, might be null if the given source
 	 *         object list was null
 	 */
-	public default <SourceType, TargetType> List<TargetType> processList(List<SourceType> source,
+	default <SourceType, TargetType> List<TargetType> processList(List<SourceType> source,
 			Class<TargetType> targetType) {
 		return source == null ? null : processInto(source, new ArrayList<>(), targetType);
 	}
@@ -142,7 +144,7 @@ public interface ProcessingService {
 	 * @return The processed target objects, might be null if the given source
 	 *         object set was null
 	 */
-	public default <SourceType, TargetType> Set<TargetType> processSet(Set<SourceType> source,
+	default <SourceType, TargetType> Set<TargetType> processSet(Set<SourceType> source,
 			Class<TargetType> targetType) {
 		return source == null ? null : processInto(source, new HashSet<>(), targetType);
 	}
@@ -172,7 +174,7 @@ public interface ProcessingService {
 	 * @return The given target collection, might be null if the given target
 	 *         collection was null
 	 */
-	public <SourceType, SourceCollectionType extends Collection<SourceType>, TargetCollectionType extends Collection<TargetType>, TargetType> TargetCollectionType processInto(
+	<SourceType, SourceCollectionType extends Collection<SourceType>, TargetCollectionType extends Collection<TargetType>, TargetType> TargetCollectionType processInto(
 			SourceCollectionType source, TargetCollectionType target, Class<TargetType> targetType);
 
 	/**
@@ -197,7 +199,7 @@ public interface ProcessingService {
 	 * @return The processed target objects, might be null if the given source
 	 *         object list was null
 	 */
-	public default <SourceType, TargetType> List<TargetType> processListStrictly(Class<SourceType> sourceType,
+	default <SourceType, TargetType> List<TargetType> processListStrictly(Class<SourceType> sourceType,
 			List<SourceType> source, Class<TargetType> targetType) {
 		return source == null ? null : processStrictlyInto(sourceType, source, new ArrayList<>(), targetType);
 	}
@@ -224,7 +226,7 @@ public interface ProcessingService {
 	 * @return The processed target objects, might be null if the given source
 	 *         object set was null
 	 */
-	public default <SourceType, TargetType> Set<TargetType> processSetStrictly(Class<SourceType> sourceType,
+	default <SourceType, TargetType> Set<TargetType> processSetStrictly(Class<SourceType> sourceType,
 			Set<SourceType> source, Class<TargetType> targetType) {
 		return source == null ? null : processStrictlyInto(sourceType, source, new HashSet<>(), targetType);
 	}
@@ -257,7 +259,7 @@ public interface ProcessingService {
 	 * @return The given target collection, might be null if the given target
 	 *         collection was null
 	 */
-	public <SourceType, SourceCollectionType extends Collection<SourceType>, TargetCollectionType extends Collection<TargetType>, TargetType> TargetCollectionType processStrictlyInto(
+	<SourceType, SourceCollectionType extends Collection<SourceType>, TargetCollectionType extends Collection<TargetType>, TargetType> TargetCollectionType processStrictlyInto(
 			Class<SourceType> sourceType, SourceCollectionType source, TargetCollectionType target,
 			Class<TargetType> targetType);
 
@@ -290,7 +292,7 @@ public interface ProcessingService {
 	 * @return The processed target objects, might be null if the given source
 	 *         object set was null
 	 */
-	public default <SourceTypeKey, SourceTypeValue, TargetTypeKey, TargetTypeValue> Map<TargetTypeKey, TargetTypeValue> processMap(
+	default <SourceTypeKey, SourceTypeValue, TargetTypeKey, TargetTypeValue> Map<TargetTypeKey, TargetTypeValue> processMap(
 			Map<SourceTypeKey, SourceTypeValue> source, Class<TargetTypeKey> targetTypeKey,
 			Class<TargetTypeValue> targetTypeValue) {
 		return source == null ? null : processInto(source, new HashMap<>(), targetTypeKey, targetTypeValue);
@@ -325,7 +327,7 @@ public interface ProcessingService {
 	 * @return The processed target objects, might be null if the given source
 	 *         object set was null
 	 */
-	public <SourceTypeKey, SourceTypeValue, TargetTypeKey, TargetTypeValue> Map<TargetTypeKey, TargetTypeValue> processInto(
+	<SourceTypeKey, SourceTypeValue, TargetTypeKey, TargetTypeValue> Map<TargetTypeKey, TargetTypeValue> processInto(
 			Map<SourceTypeKey, SourceTypeValue> source, Map<TargetTypeKey, TargetTypeValue> target,
 			Class<TargetTypeKey> targetTypeKey, Class<TargetTypeValue> targetTypeValue);
 
@@ -360,7 +362,7 @@ public interface ProcessingService {
 	 * @return The processed target objects, might be null if the given source
 	 *         object set was null
 	 */
-	public default <SourceTypeKey, SourceTypeValue, TargetTypeKey, TargetTypeValue> Map<TargetTypeKey, TargetTypeValue> processMapStrictly(
+	default <SourceTypeKey, SourceTypeValue, TargetTypeKey, TargetTypeValue> Map<TargetTypeKey, TargetTypeValue> processMapStrictly(
 			Class<SourceTypeKey> sourceTypeKey, Class<SourceTypeValue> sourceTypeValue,
 			Map<SourceTypeKey, SourceTypeValue> source, Class<TargetTypeKey> targetTypeKey,
 			Class<TargetTypeValue> targetTypeValue) {
@@ -403,7 +405,7 @@ public interface ProcessingService {
 	 * @return The processed target objects, might be null if the given source
 	 *         object set was null
 	 */
-	public <SourceTypeKey, SourceTypeValue, TargetTypeKey, TargetTypeValue> Map<TargetTypeKey, TargetTypeValue> processStrictlyInto(
+	<SourceTypeKey, SourceTypeValue, TargetTypeKey, TargetTypeValue> Map<TargetTypeKey, TargetTypeValue> processStrictlyInto(
 			Class<SourceTypeKey> sourceTypeKey, Class<SourceTypeValue> sourceTypeValue,
 			Map<SourceTypeKey, SourceTypeValue> source, Map<TargetTypeKey, TargetTypeValue> target,
 			Class<TargetTypeKey> targetTypeKey, Class<TargetTypeValue> targetTypeValue);
@@ -428,7 +430,7 @@ public interface ProcessingService {
 	 * @return The processed target object, always null if the source is null, never
 	 *         null otherwise
 	 */
-	public <SourceType extends Enum<SourceType>, TargetType extends Enum<TargetType>> TargetType processNamed(
+	<SourceType extends Enum<SourceType>, TargetType extends Enum<TargetType>> TargetType processNamed(
 			SourceType source, Class<TargetType> targetType);
 
 	/**
@@ -447,6 +449,6 @@ public interface ProcessingService {
 	 * @return The processed target object, always null if the source is null, never
 	 *         null otherwise
 	 */
-	public <SourceType extends Enum<SourceType>, TargetType extends Enum<TargetType>> TargetType processOrdinal(
+	<SourceType extends Enum<SourceType>, TargetType extends Enum<TargetType>> TargetType processOrdinal(
 			SourceType source, Class<TargetType> targetType);
 }
