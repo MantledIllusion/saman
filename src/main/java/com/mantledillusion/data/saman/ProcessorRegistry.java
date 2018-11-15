@@ -21,9 +21,9 @@ import com.mantledillusion.data.saman.exception.ProcessorTypeException;
  */
 public class ProcessorRegistry {
 
-	private final Map<Class<?>, Map<Class<?>, ProcessingService.Processor<?, ?>>> processorRegistry;
+	private final Map<Class<?>, Map<Class<?>, Processor<?, ?>>> processorRegistry;
 
-	private ProcessorRegistry(Map<Class<?>, Map<Class<?>, ProcessingService.Processor<?, ?>>> processorRegistry) {
+	private ProcessorRegistry(Map<Class<?>, Map<Class<?>, Processor<?, ?>>> processorRegistry) {
 		this.processorRegistry = processorRegistry;
 	}
 
@@ -53,11 +53,11 @@ public class ProcessorRegistry {
 			Class<TargetType> targetType) throws NoProcessorException {
 		Class<? super SourceType> workType = sourceType;
 		if (this.processorRegistry.containsKey(targetType)) {
-			Map<Class<?>, ProcessingService.Processor<?, ?>> targetTypeProcessors = this.processorRegistry
+			Map<Class<?>, Processor<?, ?>> targetTypeProcessors = this.processorRegistry
 					.get(targetType);
 			do {
 				if (targetTypeProcessors.containsKey(workType)) {
-					return (ProcessingService.Processor<SourceType, TargetType>) targetTypeProcessors.get(workType);
+					return (Processor<SourceType, TargetType>) targetTypeProcessors.get(workType);
 				}
 				workType = workType.getSuperclass();
 			} while (workType != Object.class);
@@ -96,7 +96,7 @@ public class ProcessorRegistry {
 		if (!this.processorRegistry.containsKey(sourceType)) {
 			this.processorRegistry.put(sourceType, new HashMap<>());
 		}
-		ProcessingService.Processor<SourceType, TargetType> processor;
+		Processor<SourceType, TargetType> processor;
 		if (!this.processorRegistry.get(sourceType).containsKey(targetType)) {
 			for (SourceType value : sourceType.getEnumConstants()) {
 				try {
@@ -112,7 +112,7 @@ public class ProcessorRegistry {
 					: Enum.valueOf(targetType, sourceValue.name());
 			this.processorRegistry.get(sourceType).put(targetType, processor);
 		} else {
-			processor = (ProcessingService.Processor<SourceType, TargetType>) this.processorRegistry.get(sourceType)
+			processor = (Processor<SourceType, TargetType>) this.processorRegistry.get(sourceType)
 					.get(targetType);
 		}
 		return processor;
@@ -148,7 +148,7 @@ public class ProcessorRegistry {
 		if (!this.processorRegistry.containsKey(targetType)) {
 			this.processorRegistry.put(targetType, new HashMap<>());
 		}
-		ProcessingService.Processor<SourceType, TargetType> processor;
+		Processor<SourceType, TargetType> processor;
 		if (!this.processorRegistry.get(targetType).containsKey(sourceType)) {
 			if (sourceType.getEnumConstants().length != targetType.getEnumConstants().length) {
 				throw new ProcessingException("The type '" + sourceType.getSimpleName() + "' cannot be mapped to '"
@@ -161,7 +161,7 @@ public class ProcessorRegistry {
 					: targetType.getEnumConstants()[sourceValue.ordinal()];
 			this.processorRegistry.get(targetType).put(sourceType, processor);
 		} else {
-			processor = (ProcessingService.Processor<SourceType, TargetType>) this.processorRegistry.get(targetType)
+			processor = (Processor<SourceType, TargetType>) this.processorRegistry.get(targetType)
 					.get(sourceType);
 		}
 		return processor;
@@ -175,18 +175,18 @@ public class ProcessorRegistry {
 	 * Factory method.
 	 * <p>
 	 * Creates a new {@link ProcessorRegistry} of the given
-	 * {@link ProcessingService.Processor}s.
+	 * {@link Processor}s.
 	 * 
 	 * @param <SourceType>
 	 *            The source type to convert from
 	 * @param <TargetType>
 	 *            The target type to convert to
 	 * @param processors
-	 *            The {@link ProcessingService.Processor}s to build the
+	 *            The {@link Processor}s to build the
 	 *            {@link ProcessorRegistry} from; might be empty or contain nulls.
 	 * @return A new {@link ProcessorRegistry} instance, never null
 	 */
-	public static <SourceType, TargetType> ProcessorRegistry of(ProcessingService.Processor<?, ?>... processors) {
+	public static <SourceType, TargetType> ProcessorRegistry of(Processor<?, ?>... processors) {
 		return of(Arrays.asList(processors));
 	}
 
@@ -194,35 +194,35 @@ public class ProcessorRegistry {
 	 * Factory method.
 	 * <p>
 	 * Creates a new {@link ProcessorRegistry} of the given
-	 * {@link ProcessingService.Processor}s.
+	 * {@link Processor}s.
 	 * 
 	 * @param <SourceType>
 	 *            The source type to convert from
 	 * @param <TargetType>
 	 *            The target type to convert to
 	 * @param processors
-	 *            The {@link ProcessingService.Processor}s to build the
+	 *            The {@link Processor}s to build the
 	 *            {@link ProcessorRegistry} from; might be null, empty or contain
 	 *            nulls.
 	 * @return A new {@link ProcessorRegistry} instance, never null
 	 */
 	public static <SourceType, TargetType> ProcessorRegistry of(
-			Collection<ProcessingService.Processor<?, ?>> processors) {
-		Map<Class<?>, Map<Class<?>, ProcessingService.Processor<?, ?>>> processorRegistry = new HashMap<>();
+			Collection<? extends Processor<?, ?>> processors) {
+		Map<Class<?>, Map<Class<?>, Processor<?, ?>>> processorRegistry = new HashMap<>();
 
 		if (processors != null) {
-			for (ProcessingService.Processor<?, ?> processor : processors) {
+			for (Processor<?, ?> processor : processors) {
 				if (processor != null) {
 					Map<TypeVariable<?>, Type> types = TypeUtils.getTypeArguments(processor.getClass(),
-							ProcessingService.Processor.class);
+							Processor.class);
 					Class<?> sourceType = validateProcessorTypeParameter(processor,
-							types.get(ProcessingService.Processor.class.getTypeParameters()[0]));
+							types.get(Processor.class.getTypeParameters()[0]));
 					Class<?> targetType = validateProcessorTypeParameter(processor,
-							types.get(ProcessingService.Processor.class.getTypeParameters()[1]));
+							types.get(Processor.class.getTypeParameters()[1]));
 
 					@SuppressWarnings("unchecked")
-					ProcessingService.Processor<SourceType, TargetType> toTargetConverter = (ProcessingService.Processor<SourceType, TargetType>) processor;
-					ProcessingService.Processor<SourceType, TargetType> function = (source,
+					Processor<SourceType, TargetType> toTargetConverter = (Processor<SourceType, TargetType>) processor;
+					Processor<SourceType, TargetType> function = (source,
 							conversionService) -> toTargetConverter.process(source, conversionService);
 
 					addFunction(sourceType, targetType, processorRegistry, function);
@@ -230,7 +230,7 @@ public class ProcessorRegistry {
 					if (processor instanceof ProcessingService.BiProcessor) {
 						@SuppressWarnings("unchecked")
 						ProcessingService.BiProcessor<SourceType, TargetType> toSourceProcessor = (ProcessingService.BiProcessor<SourceType, TargetType>) processor;
-						ProcessingService.Processor<TargetType, SourceType> function2 = (target,
+						Processor<TargetType, SourceType> function2 = (target,
 								processingService) -> toSourceProcessor.reverse(target, processingService);
 
 						addFunction(targetType, sourceType, processorRegistry, function2);
@@ -242,7 +242,7 @@ public class ProcessorRegistry {
 		return new ProcessorRegistry(processorRegistry);
 	}
 
-	private static Class<?> validateProcessorTypeParameter(ProcessingService.Processor<?, ?> converter,
+	private static Class<?> validateProcessorTypeParameter(Processor<?, ?> converter,
 			Type typeParameter) {
 		if (typeParameter instanceof Class) {
 			return (Class<?>) typeParameter;
@@ -254,8 +254,8 @@ public class ProcessorRegistry {
 	}
 
 	private static <SourceType, TargetType> void addFunction(Class<?> sourceType, Class<?> targetType,
-			Map<Class<?>, Map<Class<?>, ProcessingService.Processor<?, ?>>> processingRegistry,
-			ProcessingService.Processor<SourceType, TargetType> function) {
+			Map<Class<?>, Map<Class<?>, Processor<?, ?>>> processingRegistry,
+			Processor<SourceType, TargetType> function) {
 		if (!processingRegistry.containsKey(targetType)) {
 			processingRegistry.put(targetType, new HashMap<>());
 		} else if (processingRegistry.get(targetType).containsKey(sourceType)) {
