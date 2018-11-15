@@ -1,8 +1,8 @@
 package com.mantledillusion.data.saman.interfaces;
 
+import com.mantledillusion.data.saman.ProcessingDelegate;
 import com.mantledillusion.data.saman.ProcessingService;
 import com.mantledillusion.data.saman.ProcessingService.BiProcessor;
-import com.mantledillusion.data.saman.context.ProcessingContext;
 
 /**
  * Interface for {@link BiSynchronizer}s.
@@ -10,15 +10,15 @@ import com.mantledillusion.data.saman.context.ProcessingContext;
  * A {@link BiSynchronizer} is a specialized {@link Synchronizer} extension that
  * is also able to handle the back synchronization.
  * <p>
- * While {@link #fetchTarget(Object, ProcessingContext)} has to be overridden
+ * While {@link #fetchTarget(Object, ProcessingDelegate)} has to be overridden
  * for the {@link BiSynchronizer} to be able to retrieve the target object to
- * synchronize into, {@link #persistTarget(Object, Object, ProcessingContext)}
+ * synchronize into, {@link #persistTarget(Object, Object, ProcessingDelegate)}
  * may only be overridden if additional steps are necessary to persist the
  * synchronized changes to the target object.
  * <p>
- * While {@link #fetchSource(Object, ProcessingContext)} has to be overridden
+ * While {@link #fetchSource(Object, ProcessingDelegate)} has to be overridden
  * for the {@link BiSynchronizer} to be able to retrieve the source object to
- * synchronize into, {@link #persistSource(Object, Object, ProcessingContext)}
+ * synchronize into, {@link #persistSource(Object, Object, ProcessingDelegate)}
  * may only be overridden if additional steps are necessary to persist the
  * synchronized changes to the source object.
  *
@@ -31,7 +31,7 @@ public interface BiSynchronizer<SourceType, TargetType>
 		extends Synchronizer<SourceType, TargetType>, BiProcessor<SourceType, TargetType> {
 
 	@Override
-	default SourceType reverse(TargetType target, ProcessingContext context) throws Exception {
+	default SourceType reverse(TargetType target, ProcessingDelegate context) throws Exception {
 		SourceType source = fetchSource(target, context);
 		if (source != null) {
 			toSource(target, source, context);
@@ -53,7 +53,7 @@ public interface BiSynchronizer<SourceType, TargetType>
 	 * @throws Exception
 	 *             Any type of {@link Exception} the fetching might cause.
 	 */
-	SourceType fetchSource(TargetType target, ProcessingContext context) throws Exception;
+	SourceType fetchSource(TargetType target, ProcessingDelegate context) throws Exception;
 
 	/**
 	 * Synchronizes the given target's values into the given source.
@@ -70,7 +70,7 @@ public interface BiSynchronizer<SourceType, TargetType>
 	 * @throws Exception
 	 *             Any type of {@link Exception} the synchronization might cause.
 	 */
-	void toSource(TargetType target, SourceType source, ProcessingContext context) throws Exception;
+	void toSource(TargetType target, SourceType source, ProcessingDelegate context) throws Exception;
 
 	/**
 	 * Persists the source synchronized into from the given target.
@@ -89,7 +89,7 @@ public interface BiSynchronizer<SourceType, TargetType>
 	 * @throws Exception
 	 *             Any type of {@link Exception} the persisting might cause.
 	 */
-	default SourceType persistSource(SourceType source, TargetType target, ProcessingContext context) throws Exception {
+	default SourceType persistSource(SourceType source, TargetType target, ProcessingDelegate context) throws Exception {
 		return source; // No operation by default
 	}
 }

@@ -6,7 +6,6 @@ import java.util.Map.Entry;
 
 import com.mantledillusion.data.saman.exception.ProcessingException;
 import com.mantledillusion.data.saman.exception.ProcessorException;
-import com.mantledillusion.data.saman.context.ProcessingContext;
 
 /**
  * Reference implementation of {@link ProcessingService}.
@@ -23,9 +22,9 @@ public class DefaultProcessingService implements ProcessingService {
 	}
 
 	private <SourceType, TargetType> TargetType execute(ProcessingService.Processor<SourceType, TargetType> processor,
-			SourceType source) {
+			SourceType source, ProcessingContext context) {
 		try {
-			return processor.process(source, new ProcessingContext(this));
+			return processor.process(source, new ProcessingDelegate(this, context));
 		} catch (Exception e) {
 			throw new ProcessorException(e);
 		}
@@ -38,7 +37,7 @@ public class DefaultProcessingService implements ProcessingService {
 	@Override
 	@SuppressWarnings("unchecked")
 	public <SourceType, TargetType> TargetType processStrictly(Class<SourceType> sourceType, SourceType source,
-			Class<TargetType> targetType) {
+			Class<TargetType> targetType, ProcessingContext context) {
 		if (sourceType == null) {
 			throw new ProcessingException("Cannot process using a null source type.");
 		} else if (targetType == null) {
@@ -49,7 +48,7 @@ public class DefaultProcessingService implements ProcessingService {
 			return (TargetType) source;
 		}
 
-		return execute(this.processorRegistry.identifyProcessor(sourceType, targetType), source);
+		return execute(this.processorRegistry.identifyProcessor(sourceType, targetType), source, context);
 	}
 
 	// ############################################################################################################
@@ -58,10 +57,11 @@ public class DefaultProcessingService implements ProcessingService {
 
 	@Override
 	public <SourceType, SourceCollectionType extends Collection<SourceType>, TargetCollectionType extends Collection<TargetType>, TargetType> TargetCollectionType processInto(
-			SourceCollectionType source, TargetCollectionType target, Class<TargetType> targetType) {
+			SourceCollectionType source, TargetCollectionType target, Class<TargetType> targetType,
+			ProcessingContext context) {
 		if (source != null && target != null) {
 			for (SourceType sourceElement : source) {
-				target.add(process(sourceElement, targetType));
+				target.add(process(sourceElement, targetType, context));
 			}
 		}
 		return target;
@@ -70,10 +70,10 @@ public class DefaultProcessingService implements ProcessingService {
 	@Override
 	public <SourceType, SourceCollectionType extends Collection<SourceType>, TargetCollectionType extends Collection<TargetType>, TargetType> TargetCollectionType processStrictlyInto(
 			Class<SourceType> sourceType, SourceCollectionType source, TargetCollectionType target,
-			Class<TargetType> targetType) {
+			Class<TargetType> targetType, ProcessingContext context) {
 		if (source != null && target != null) {
 			for (SourceType sourceElement : source) {
-				target.add(processStrictly(sourceType, sourceElement, targetType));
+				target.add(processStrictly(sourceType, sourceElement, targetType, context));
 			}
 		}
 		return target;
@@ -86,10 +86,11 @@ public class DefaultProcessingService implements ProcessingService {
 	@Override
 	public <SourceTypeKey, SourceTypeValue, TargetTypeKey, TargetTypeValue> Map<TargetTypeKey, TargetTypeValue> processInto(
 			Map<SourceTypeKey, SourceTypeValue> source, Map<TargetTypeKey, TargetTypeValue> target,
-			Class<TargetTypeKey> targetTypeKey, Class<TargetTypeValue> targetTypeValue) {
+			Class<TargetTypeKey> targetTypeKey, Class<TargetTypeValue> targetTypeValue, ProcessingContext context) {
 		if (source != null && target != null) {
 			for (Entry<SourceTypeKey, SourceTypeValue> entry : source.entrySet()) {
-				target.put(process(entry.getKey(), targetTypeKey), process(entry.getValue(), targetTypeValue));
+				target.put(process(entry.getKey(), targetTypeKey, context),
+						process(entry.getValue(), targetTypeValue, context));
 			}
 		}
 		return target;
@@ -99,11 +100,11 @@ public class DefaultProcessingService implements ProcessingService {
 	public <SourceTypeKey, SourceTypeValue, TargetTypeKey, TargetTypeValue> Map<TargetTypeKey, TargetTypeValue> processStrictlyInto(
 			Class<SourceTypeKey> sourceTypeKey, Class<SourceTypeValue> sourceTypeValue,
 			Map<SourceTypeKey, SourceTypeValue> source, Map<TargetTypeKey, TargetTypeValue> target,
-			Class<TargetTypeKey> targetTypeKey, Class<TargetTypeValue> targetTypeValue) {
+			Class<TargetTypeKey> targetTypeKey, Class<TargetTypeValue> targetTypeValue, ProcessingContext context) {
 		if (source != null && target != null) {
 			for (Entry<SourceTypeKey, SourceTypeValue> entry : source.entrySet()) {
-				target.put(processStrictly(sourceTypeKey, entry.getKey(), targetTypeKey),
-						processStrictly(sourceTypeValue, entry.getValue(), targetTypeValue));
+				target.put(processStrictly(sourceTypeKey, entry.getKey(), targetTypeKey, context),
+						processStrictly(sourceTypeValue, entry.getValue(), targetTypeValue, context));
 			}
 		}
 		return target;
@@ -115,7 +116,7 @@ public class DefaultProcessingService implements ProcessingService {
 
 	@Override
 	public <SourceType extends Enum<SourceType>, TargetType extends Enum<TargetType>> TargetType processNamed(
-			SourceType source, Class<TargetType> targetType) {
+			SourceType source, Class<TargetType> targetType, ProcessingContext context) {
 		if (targetType == null) {
 			throw new ProcessingException("Cannot process using a null target type.");
 		}
@@ -124,13 +125,14 @@ public class DefaultProcessingService implements ProcessingService {
 			return null;
 		} else {
 			Class<SourceType> sourceType = source.getDeclaringClass();
-			return execute(this.processorRegistry.identifyNamedProcessor(sourceType, targetType), source);
+			return execute(this.processorRegistry.identifyNamedProcessor(sourceType, targetType), source,
+					context);
 		}
 	}
 
 	@Override
 	public <SourceType extends Enum<SourceType>, TargetType extends Enum<TargetType>> TargetType processOrdinal(
-			SourceType source, Class<TargetType> targetType) {
+			SourceType source, Class<TargetType> targetType, ProcessingContext context) {
 		if (targetType == null) {
 			throw new ProcessingException("Cannot process using a null target type.");
 		}
@@ -139,7 +141,8 @@ public class DefaultProcessingService implements ProcessingService {
 			return null;
 		} else {
 			Class<SourceType> sourceType = source.getDeclaringClass();
-			return execute(this.processorRegistry.identifyOrdinalProcessor(sourceType, targetType), source);
+			return execute(this.processorRegistry.identifyOrdinalProcessor(sourceType, targetType), source,
+					context);
 		}
 	}
 }

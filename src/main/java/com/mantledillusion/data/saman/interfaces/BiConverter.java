@@ -1,8 +1,8 @@
 package com.mantledillusion.data.saman.interfaces;
 
+import com.mantledillusion.data.saman.ProcessingDelegate;
 import com.mantledillusion.data.saman.ProcessingService;
 import com.mantledillusion.data.saman.ProcessingService.BiProcessor;
-import com.mantledillusion.data.saman.context.ProcessingContext;
 
 /**
  * An interface for {@link BiConverter}s.
@@ -19,7 +19,7 @@ public interface BiConverter<SourceType, TargetType>
 		extends Converter<SourceType, TargetType>, BiProcessor<SourceType, TargetType> {
 
 	@Override
-	default SourceType reverse(TargetType target, ProcessingContext context) throws Exception {
+	default SourceType reverse(TargetType target, ProcessingDelegate context) throws Exception {
 		return toSource(target, context);
 	}
 
@@ -37,5 +37,5 @@ public interface BiConverter<SourceType, TargetType>
 	 * @throws Exception
 	 *             Any type of {@link Exception} the conversion might cause.
 	 */
-	SourceType toSource(TargetType target, ProcessingContext context) throws Exception;
+	SourceType toSource(TargetType target, ProcessingDelegate context) throws Exception;
 }

@@ -7,7 +7,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.mantledillusion.data.saman.context.ProcessingContext;
 import com.mantledillusion.data.saman.interfaces.BiSynchronizer;
 
 import static org.junit.Assert.*;
@@ -43,7 +42,7 @@ public class SingleSynchronizationTest {
 		this.service = new DefaultProcessingService(ProcessorRegistry.of(new BiSynchronizer<SourcePojo, TargetPojo>() {
 
 			@Override
-			public TargetPojo fetchTarget(SourcePojo source, ProcessingContext service) throws Exception {
+			public TargetPojo fetchTarget(SourcePojo source, ProcessingDelegate service) throws Exception {
 				if (mockDb.containsKey(source.id)) {
 					return mockDb.get(source.id);
 				} else {
@@ -52,12 +51,12 @@ public class SingleSynchronizationTest {
 			}
 
 			@Override
-			public void toTarget(SourcePojo source, TargetPojo target, ProcessingContext service) throws Exception {
+			public void toTarget(SourcePojo source, TargetPojo target, ProcessingDelegate service) throws Exception {
 				target.value = source.value;
 			}
 			
 			@Override
-			public TargetPojo persistTarget(TargetPojo target, SourcePojo source, ProcessingContext service) throws Exception {
+			public TargetPojo persistTarget(TargetPojo target, SourcePojo source, ProcessingDelegate service) throws Exception {
 				if (target.id == null) {
 					target.id = RandomStringUtils.random(5);
 				}
@@ -66,7 +65,7 @@ public class SingleSynchronizationTest {
 			}
 
 			@Override
-			public SourcePojo fetchSource(TargetPojo target, ProcessingContext service) throws Exception {
+			public SourcePojo fetchSource(TargetPojo target, ProcessingDelegate service) throws Exception {
 				if (mockService.containsKey(target.id)) {
 					return mockService.get(target.id);
 				} else {
@@ -75,12 +74,12 @@ public class SingleSynchronizationTest {
 			}
 
 			@Override
-			public void toSource(TargetPojo target, SourcePojo source, ProcessingContext service) throws Exception {
+			public void toSource(TargetPojo target, SourcePojo source, ProcessingDelegate service) throws Exception {
 				source.value = target.value;
 			}
 			
 			@Override
-			public SourcePojo persistSource(SourcePojo source, TargetPojo target, ProcessingContext service) throws Exception {
+			public SourcePojo persistSource(SourcePojo source, TargetPojo target, ProcessingDelegate service) throws Exception {
 				if (source.id == null) {
 					source.id = RandomStringUtils.random(5);
 				}

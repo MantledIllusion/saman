@@ -1,8 +1,8 @@
 package com.mantledillusion.data.saman.interfaces;
 
+import com.mantledillusion.data.saman.ProcessingDelegate;
 import com.mantledillusion.data.saman.ProcessingService;
 import com.mantledillusion.data.saman.ProcessingService.Processor;
-import com.mantledillusion.data.saman.context.ProcessingContext;
 
 /**
  * Interface for {@link Synchronizer}s.
@@ -11,9 +11,9 @@ import com.mantledillusion.data.saman.context.ProcessingContext;
  * extension that synchronizes a source object's values into an already existing
  * target object instead of creating a new target object instance.
  * <p>
- * While {@link #fetchTarget(Object, ProcessingContext)} has to be overridden
+ * While {@link #fetchTarget(Object, ProcessingDelegate)} has to be overridden
  * for the {@link Synchronizer} to be able to retrieve the target object to
- * synchronize into, {@link #persistTarget(Object, Object, ProcessingContext)}
+ * synchronize into, {@link #persistTarget(Object, Object, ProcessingDelegate)}
  * may only be overridden if additional steps are necessary to persist the
  * synchronized changes to the target object.
  *
@@ -25,7 +25,7 @@ import com.mantledillusion.data.saman.context.ProcessingContext;
 public interface Synchronizer<SourceType, TargetType> extends Processor<SourceType, TargetType> {
 
 	@Override
-	default TargetType process(SourceType source, ProcessingContext context) throws Exception {
+	default TargetType process(SourceType source, ProcessingDelegate context) throws Exception {
 		TargetType target = fetchTarget(source, context);
 		if (target != null) {
 			toTarget(source, target, context);
@@ -47,7 +47,7 @@ public interface Synchronizer<SourceType, TargetType> extends Processor<SourceTy
 	 * @throws Exception
 	 *             Any type of {@link Exception} the fetching might cause.
 	 */
-	TargetType fetchTarget(SourceType source, ProcessingContext context) throws Exception;
+	TargetType fetchTarget(SourceType source, ProcessingDelegate context) throws Exception;
 
 	/**
 	 * Synchronizes the given source's values into the given target.
@@ -64,7 +64,7 @@ public interface Synchronizer<SourceType, TargetType> extends Processor<SourceTy
 	 * @throws Exception
 	 *             Any type of {@link Exception} the synchronization might cause.
 	 */
-	void toTarget(SourceType source, TargetType target, ProcessingContext context) throws Exception;
+	void toTarget(SourceType source, TargetType target, ProcessingDelegate context) throws Exception;
 
 	/**
 	 * Persists the target synchronized into from the given source.
@@ -83,7 +83,7 @@ public interface Synchronizer<SourceType, TargetType> extends Processor<SourceTy
 	 * @throws Exception
 	 *             Any type of {@link Exception} the persisting might cause.
 	 */
-	default TargetType persistTarget(TargetType target, SourceType source, ProcessingContext context) throws Exception {
+	default TargetType persistTarget(TargetType target, SourceType source, ProcessingDelegate context) throws Exception {
 		return target; // No operation by default
 	}
 }
