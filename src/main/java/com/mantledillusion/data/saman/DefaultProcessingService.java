@@ -60,6 +60,7 @@ public class DefaultProcessingService implements ProcessingService {
 			SourceCollectionType source, TargetCollectionType target, Class<TargetType> targetType,
 			ProcessingContext context) {
 		if (source != null && target != null) {
+			context = new ProcessingContext(context);
 			for (SourceType sourceElement : source) {
 				target.add(process(sourceElement, targetType, context));
 			}
@@ -72,6 +73,7 @@ public class DefaultProcessingService implements ProcessingService {
 			Class<SourceType> sourceType, SourceCollectionType source, TargetCollectionType target,
 			Class<TargetType> targetType, ProcessingContext context) {
 		if (source != null && target != null) {
+			context = new ProcessingContext(context);
 			for (SourceType sourceElement : source) {
 				target.add(processStrictly(sourceType, sourceElement, targetType, context));
 			}
@@ -88,6 +90,7 @@ public class DefaultProcessingService implements ProcessingService {
 			Map<SourceTypeKey, SourceTypeValue> source, Map<TargetTypeKey, TargetTypeValue> target,
 			Class<TargetTypeKey> targetTypeKey, Class<TargetTypeValue> targetTypeValue, ProcessingContext context) {
 		if (source != null && target != null) {
+			context = new ProcessingContext(context);
 			for (Entry<SourceTypeKey, SourceTypeValue> entry : source.entrySet()) {
 				target.put(process(entry.getKey(), targetTypeKey, context),
 						process(entry.getValue(), targetTypeValue, context));
@@ -102,6 +105,7 @@ public class DefaultProcessingService implements ProcessingService {
 			Map<SourceTypeKey, SourceTypeValue> source, Map<TargetTypeKey, TargetTypeValue> target,
 			Class<TargetTypeKey> targetTypeKey, Class<TargetTypeValue> targetTypeValue, ProcessingContext context) {
 		if (source != null && target != null) {
+			context = new ProcessingContext(context);
 			for (Entry<SourceTypeKey, SourceTypeValue> entry : source.entrySet()) {
 				target.put(processStrictly(sourceTypeKey, entry.getKey(), targetTypeKey, context),
 						processStrictly(sourceTypeValue, entry.getValue(), targetTypeValue, context));
