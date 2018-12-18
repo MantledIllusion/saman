@@ -6,14 +6,17 @@ import java.util.WeakHashMap;
 
 public class ProcessingContext {
 
-	private final Map<Class<?>, Object> context = new WeakHashMap<>();
+	private final Map<Class<?>, Object> context;
 
 	private ProcessingContext() {
+		this.context = new WeakHashMap<>();
 	}
 
 	protected ProcessingContext(ProcessingContext base) {
 		if (base != null) {
-			this.context.putAll(base.context);
+			this.context = (base.context);
+		} else {
+			this.context = new WeakHashMap<>();
 		}
 	}
 
