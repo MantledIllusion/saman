@@ -47,7 +47,7 @@ public class SingleConversionTest extends AbstractConversionTest {
 	}
 	
 	@Test(expected=ProcessorException.class)
-	public void testConversionException() {
+	public void testCheckedProcessorException() {
 		new DefaultProcessingService(ProcessorRegistry.of(new Converter<SourcePojo, TargetPojo>() {
 
 			@Override
@@ -55,5 +55,29 @@ public class SingleConversionTest extends AbstractConversionTest {
 				throw new Exception();
 			}
 		})).process(SOURCE_A, TargetPojo.class);
+	}
+	
+	@Test(expected=ProcessorException.class)
+	public void testWrappedRuntimeProcessorException() {
+		new DefaultProcessingService(ProcessorRegistry.of(new Converter<SourcePojo, TargetPojo>() {
+
+			@Override
+			public TargetPojo toTarget(SourcePojo source, ProcessingDelegate service) throws Exception {
+				throw new RuntimeException();
+			}
+		})).process(SOURCE_A, TargetPojo.class);
+	}
+	
+	@Test(expected=RuntimeException.class)
+	public void testUnwrappedRuntimeProcessorException() {
+		DefaultProcessingService service = new DefaultProcessingService(ProcessorRegistry.of(new Converter<SourcePojo, TargetPojo>() {
+
+			@Override
+			public TargetPojo toTarget(SourcePojo source, ProcessingDelegate service) throws Exception {
+				throw new RuntimeException();
+			}
+		}));
+		service.setWrapRuntimeExceptions(false);
+		service.process(SOURCE_A, TargetPojo.class);
 	}
 }

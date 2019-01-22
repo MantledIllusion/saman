@@ -13,6 +13,7 @@ import com.mantledillusion.data.saman.exception.ProcessorException;
 public class DefaultProcessingService implements ProcessingService {
 
 	private final ProcessorRegistry processorRegistry;
+	private boolean wrapRuntimeExceptions = true;
 
 	public DefaultProcessingService(ProcessorRegistry processorRegistry) {
 		if (processorRegistry == null) {
@@ -25,6 +26,11 @@ public class DefaultProcessingService implements ProcessingService {
 			SourceType source, ProcessingContext context) {
 		try {
 			return processor.process(source, new ProcessingDelegate(this, context));
+		} catch (RuntimeException e) {
+			if (this.wrapRuntimeExceptions) {
+				throw new ProcessorException(e);
+			}
+			throw e;
 		} catch (Exception e) {
 			throw new ProcessorException(e);
 		}
@@ -33,6 +39,30 @@ public class DefaultProcessingService implements ProcessingService {
 	// ############################################################################################################
 	// ############################################# SINGLE INSTANCES #############################################
 	// ############################################################################################################
+
+	/**
+	 * Returns whether {@link RuntimeException}s are wrapped into
+	 * {@link ProcessorException}s if thrown during
+	 * {@link Processor#process(Object, ProcessingDelegate)}.
+	 * 
+	 * @return True if {@link RuntimeException}s should be wrapped, false otherwise
+	 */
+	public boolean doWrapRuntimeExceptions() {
+		return wrapRuntimeExceptions;
+	}
+
+	/**
+	 * Sets whether {@link RuntimeException}s should be wrapped into
+	 * {@link ProcessorException}s if thrown during
+	 * {@link Processor#process(Object, ProcessingDelegate)}.
+	 * 
+	 * @param wrapRuntimeExceptions
+	 *            True if {@link RuntimeException}s should be wrapped, false
+	 *            otherwise.
+	 */
+	public void setWrapRuntimeExceptions(boolean wrapRuntimeExceptions) {
+		this.wrapRuntimeExceptions = wrapRuntimeExceptions;
+	}
 
 	@Override
 	@SuppressWarnings("unchecked")
@@ -129,8 +159,7 @@ public class DefaultProcessingService implements ProcessingService {
 			return null;
 		} else {
 			Class<SourceType> sourceType = source.getDeclaringClass();
-			return execute(this.processorRegistry.identifyNamedProcessor(sourceType, targetType), source,
-					context);
+			return execute(this.processorRegistry.identifyNamedProcessor(sourceType, targetType), source, context);
 		}
 	}
 
@@ -145,8 +174,7 @@ public class DefaultProcessingService implements ProcessingService {
 			return null;
 		} else {
 			Class<SourceType> sourceType = source.getDeclaringClass();
-			return execute(this.processorRegistry.identifyOrdinalProcessor(sourceType, targetType), source,
-					context);
+			return execute(this.processorRegistry.identifyOrdinalProcessor(sourceType, targetType), source, context);
 		}
 	}
 }
