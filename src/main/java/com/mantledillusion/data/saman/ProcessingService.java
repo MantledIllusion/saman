@@ -931,19 +931,19 @@ public interface ProcessingService {
      * <p>
      * Uses {@link #processStrictly(Class, Object, Class)}.
      *
-     * @param <SourceType>            The source type to process from
-     * @param <SourceCollectionType>  The type of the source collection
-     * @param <TargetCollectionType>> The type of the target collection
-     * @param <TargetType>            The target type to process to
-     * @param sourceType              The source type to process; might <b>not</b> be null.
-     * @param source                  The collection of source objects to process; might be null.
-     * @param target                  The target collection of objects to process into; might be null
-     *                                although in this case null is returned.
-     * @param targetType              The type to process all of the source objects to; might <b>not</b>
-     *                                be null.
-     * @param equalityPredicate       The {@link BiPredicate} to use for checking equality between source
-     *                                and target objects, determining the latter to be reused; might
-     *                                <b>not</b> be null.
+     * @param <SourceType>           The source type to process from
+     * @param <SourceCollectionType> The type of the source collection
+     * @param <TargetCollectionType> The type of the target collection
+     * @param <TargetType>           The target type to process to
+     * @param sourceType             The source type to process; might <b>not</b> be null.
+     * @param source                 The collection of source objects to process; might be null.
+     * @param target                 The target collection of objects to process into; might be null
+     *                               although in this case null is returned.
+     * @param targetType             The type to process all of the source objects to; might <b>not</b>
+     *                               be null.
+     * @param equalityPredicate      The {@link BiPredicate} to use for checking equality between source
+     *                               and target objects, determining the latter to be reused; might
+     *                               <b>not</b> be null.
      * @return The given target collection, might be null if the given target
      * collection was null
      */
