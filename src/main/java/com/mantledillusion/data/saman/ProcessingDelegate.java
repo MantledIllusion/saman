@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiPredicate;
 
 public class ProcessingDelegate extends ProcessingContext implements ProcessingService {
 
@@ -47,17 +48,6 @@ public class ProcessingDelegate extends ProcessingContext implements ProcessingS
 	// ############################################################################################################
 
 	@Override
-	public <SourceType, TargetType> List<TargetType> processList(List<SourceType> source,
-			Class<TargetType> targetType) {
-		return this.service.processList(source, targetType, this);
-	}
-
-	@Override
-	public <SourceType, TargetType> Set<TargetType> processSet(Set<SourceType> source, Class<TargetType> targetType) {
-		return this.service.processSet(source, targetType, this);
-	}
-
-	@Override
 	public <SourceType, SourceCollectionType extends Collection<SourceType>, TargetCollectionType extends Collection<TargetType>, TargetType> TargetCollectionType processInto(
 			SourceCollectionType source, TargetCollectionType target, Class<TargetType> targetType) {
 		return this.service.processInto(source, target, targetType, this);
@@ -71,15 +61,17 @@ public class ProcessingDelegate extends ProcessingContext implements ProcessingS
 	}
 
 	@Override
-	public <SourceType, TargetType> List<TargetType> processListStrictly(Class<SourceType> sourceType,
-			List<SourceType> source, Class<TargetType> targetType) {
-		return this.service.processListStrictly(sourceType, source, targetType, this);
+	public <SourceType, SourceCollectionType extends Collection<SourceType>, TargetCollectionType extends Collection<TargetType>, TargetType> TargetCollectionType processIntoAligning(
+			SourceCollectionType source, TargetCollectionType target, Class<TargetType> targetType,
+			BiPredicate<SourceType, TargetType> equalityPredicate) {
+		return this.service.processIntoAligning(source, target, targetType, equalityPredicate, this);
 	}
 
 	@Override
-	public <SourceType, TargetType> Set<TargetType> processSetStrictly(Class<SourceType> sourceType,
-			Set<SourceType> source, Class<TargetType> targetType) {
-		return this.service.processSetStrictly(sourceType, source, targetType, this);
+	public <SourceType, SourceCollectionType extends Collection<SourceType>, TargetCollectionType extends Collection<TargetType>, TargetType> TargetCollectionType processIntoAligning(
+			SourceCollectionType source, TargetCollectionType target, Class<TargetType> targetType,
+			BiPredicate<SourceType, TargetType> equalityPredicate, ProcessingContext context) {
+		return this.service.processIntoAligning(source, target, targetType, equalityPredicate, context);
 	}
 
 	@Override
@@ -94,6 +86,21 @@ public class ProcessingDelegate extends ProcessingContext implements ProcessingS
 			Class<SourceType> sourceType, SourceCollectionType source, TargetCollectionType target,
 			Class<TargetType> targetType, ProcessingContext context) {
 		return this.service.processStrictlyInto(sourceType, source, target, targetType, context);
+	}
+
+	@Override
+	public <SourceType, SourceCollectionType extends Collection<SourceType>, TargetCollectionType extends Collection<TargetType>, TargetType> TargetCollectionType processStrictlyIntoAligning(
+			Class<SourceType> sourceType, SourceCollectionType source, TargetCollectionType target,
+			Class<TargetType> targetType, BiPredicate<SourceType, TargetType> equalityPredicate) {
+		return this.service.processStrictlyIntoAligning(sourceType, source, target, targetType, equalityPredicate, this);
+	}
+
+	@Override
+	public <SourceType, SourceCollectionType extends Collection<SourceType>, TargetCollectionType extends Collection<TargetType>, TargetType> TargetCollectionType processStrictlyIntoAligning(
+			Class<SourceType> sourceType, SourceCollectionType source, TargetCollectionType target,
+			Class<TargetType> targetType, BiPredicate<SourceType, TargetType> equalityPredicate,
+			ProcessingContext context) {
+		return this.service.processStrictlyIntoAligning(sourceType, source, target, targetType, equalityPredicate, context);
 	}
 
 	// ############################################################################################################

@@ -4,12 +4,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.mantledillusion.data.saman.interfaces.BiSynchronizer;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Assertions;
 
 public class SingleSynchronizationTest {
 	
@@ -37,7 +37,7 @@ public class SingleSynchronizationTest {
 	private Map<String, SourcePojo> mockService;
 	private Map<String, TargetPojo> mockDb;
 	
-	@Before
+	@BeforeEach
 	public void before() {
 		this.service = new DefaultProcessingService(ProcessorRegistry.of(new BiSynchronizer<SourcePojo, TargetPojo>() {
 
@@ -97,12 +97,12 @@ public class SingleSynchronizationTest {
 		source.value = VALUE;
 		
 		TargetPojo target = this.service.process(source, TargetPojo.class);
-		assertEquals(1, this.mockDb.size());
-		assertEquals(VALUE, target.value);
+		Assertions.assertEquals(1, this.mockDb.size());
+		Assertions.assertEquals(VALUE, target.value);
 		
 		SourcePojo convertedSource = this.service.process(target, SourcePojo.class);
-		assertEquals(1, this.mockService.size());
-		assertEquals(VALUE, convertedSource.value);
-		assertEquals(target.id, convertedSource.id);
+		Assertions.assertEquals(1, this.mockService.size());
+		Assertions.assertEquals(VALUE, convertedSource.value);
+		Assertions.assertEquals(target.id, convertedSource.id);
 	}
 }

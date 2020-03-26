@@ -6,17 +6,13 @@ import java.util.WeakHashMap;
 
 public class ProcessingContext {
 
-	private final Map<Class<?>, Object> context;
+	private final Map<Class<?>, Object> context = new WeakHashMap<>();
 
-	private ProcessingContext() {
-		this.context = new WeakHashMap<>();
-	}
+	private ProcessingContext() {}
 
 	protected ProcessingContext(ProcessingContext base) {
 		if (base != null) {
-			this.context = (base.context);
-		} else {
-			this.context = new WeakHashMap<>();
+			this.context.putAll(base.context);
 		}
 	}
 
@@ -50,11 +46,26 @@ public class ProcessingContext {
 		return (T) this.context.get(valueType);
 	}
 
-	public <T> ProcessingContext set(T value) {
-		if (value == null) {
-			throw new IllegalArgumentException("Cannot set a null context value");
+	@SuppressWarnings("unchecked")
+	public <T> T get(Class<T> valueType, T defaultValue) {
+		if (valueType == null) {
+			throw new IllegalArgumentException("No context value available for a null value type");
 		}
-		this.context.put(value.getClass(), value);
+		return this.context.containsKey(valueType) ? (T) this.context.get(valueType) : defaultValue;
+	}
+
+	public <T> ProcessingContext set(T value) {
+		return set(value, false);
+	}
+
+	public <T> ProcessingContext set(T value, boolean strict) {
+		if (value == null) {
+			if (strict) {
+				throw new IllegalArgumentException("Cannot set a null context value");
+			}
+		} else {
+			this.context.put(value.getClass(), value);
+		}
 		return this;
 	}
 

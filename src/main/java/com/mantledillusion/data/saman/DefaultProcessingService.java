@@ -1,8 +1,10 @@
 package com.mantledillusion.data.saman;
 
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
+import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 
 import com.mantledillusion.data.saman.exception.ProcessingException;
 import com.mantledillusion.data.saman.exception.ProcessorException;
@@ -89,23 +91,90 @@ public class DefaultProcessingService implements ProcessingService {
 	public <SourceType, SourceCollectionType extends Collection<SourceType>, TargetCollectionType extends Collection<TargetType>, TargetType> TargetCollectionType processInto(
 			SourceCollectionType source, TargetCollectionType target, Class<TargetType> targetType,
 			ProcessingContext context) {
-		if (source != null && target != null) {
-			context = new ProcessingContext(context);
-			for (SourceType sourceElement : source) {
-				target.add(process(sourceElement, targetType, context));
-			}
-		}
-		return target;
+		return processInto(source, target, context, (sourceElement, ctx) -> process(sourceElement, targetType, ctx));
 	}
 
 	@Override
 	public <SourceType, SourceCollectionType extends Collection<SourceType>, TargetCollectionType extends Collection<TargetType>, TargetType> TargetCollectionType processStrictlyInto(
 			Class<SourceType> sourceType, SourceCollectionType source, TargetCollectionType target,
 			Class<TargetType> targetType, ProcessingContext context) {
+		return processInto(source, target, context, (sourceElement, ctx) -> processStrictly(sourceType, sourceElement, targetType, ctx));
+	}
+
+	private <SourceType, SourceCollectionType extends Collection<SourceType>, TargetCollectionType extends Collection<TargetType>, TargetType> TargetCollectionType processInto(
+			SourceCollectionType source, TargetCollectionType target, ProcessingContext context,
+			BiFunction<SourceType, ProcessingContext, TargetType> callback) {
 		if (source != null && target != null) {
 			context = new ProcessingContext(context);
 			for (SourceType sourceElement : source) {
-				target.add(processStrictly(sourceType, sourceElement, targetType, context));
+				target.add(callback.apply(sourceElement, context));
+			}
+		}
+		return target;
+	}
+
+	@Override
+	public <SourceType, SourceCollectionType extends Collection<SourceType>, TargetCollectionType extends Collection<TargetType>, TargetType> TargetCollectionType processIntoAligning(
+			SourceCollectionType source, TargetCollectionType target, Class<TargetType> targetType,
+			BiPredicate<SourceType, TargetType> equalityPredicate, ProcessingContext context) {
+		return processIntoAligning(source, target, equalityPredicate, context, (sourceElement, ctx) -> process(sourceElement, targetType, ctx));
+	}
+
+	@Override
+	public <SourceType, SourceCollectionType extends Collection<SourceType>, TargetCollectionType extends Collection<TargetType>, TargetType> TargetCollectionType processStrictlyIntoAligning(
+			Class<SourceType> sourceType, SourceCollectionType source, TargetCollectionType target,
+			Class<TargetType> targetType, BiPredicate<SourceType, TargetType> equalityPredicate,
+			ProcessingContext context) {
+		return processIntoAligning(source, target, equalityPredicate, context, (sourceElement, ctx) -> processStrictly(sourceType, sourceElement, targetType, ctx));
+	}
+
+	private <SourceType, SourceCollectionType extends Collection<SourceType>, TargetCollectionType extends Collection<TargetType>, TargetType> TargetCollectionType processIntoAligning(
+			SourceCollectionType source, TargetCollectionType target,
+			BiPredicate<SourceType, TargetType> equalityPredicate, ProcessingContext context,
+			BiFunction<SourceType, ProcessingContext, TargetType> callback) {
+		if (equalityPredicate == null) {
+			throw new ProcessingException("Cannot align between two collections with a null equality predicate");
+		}
+
+		if (target != null) {
+			if (source != null) {
+				Map<TargetType, SourceType> alignedElements = new IdentityHashMap<>();
+				List<SourceType> newElements = new ArrayList<>();
+				for (SourceType sourceElement: source) {
+					List<TargetType> possibleTargetElements = target.stream().
+							filter(targetElement -> equalityPredicate.test(sourceElement, targetElement)).
+							collect(Collectors.toList());
+					if (possibleTargetElements.isEmpty()) {
+						newElements.add(sourceElement);
+					} else if (possibleTargetElements.size() == 1) {
+						alignedElements.put(possibleTargetElements.iterator().next(), sourceElement);
+					} else {
+						throw new ProcessingException("The source element '" + sourceElement + "' has " +
+								possibleTargetElements.size() + " possible target elements to align with; expecting one or none.");
+					}
+				}
+
+				context = new ProcessingContext(context);
+				Iterator<TargetType> targetElementIterator = target.iterator();
+				while (targetElementIterator.hasNext()) {
+					TargetType targetElement = targetElementIterator.next();
+					if (alignedElements.containsKey(targetElement)) {
+						TargetType processedTargetElement = callback.apply(alignedElements.get(targetElement),
+								new ProcessingContext(context).set(targetElement));
+						if (targetElement != processedTargetElement) {
+							throw new ProcessingException("Unable to align collection; processor was expected to map " +
+									"onto and return target element instance '" + targetElement + "' provided by in the " +
+									ProcessingContext.class.getSimpleName() + ", but it did not.");
+						}
+					} else {
+						targetElementIterator.remove();
+					}
+				}
+				for (SourceType sourceElement: newElements) {
+					target.add(callback.apply(sourceElement, context));
+				}
+			} else {
+				target.clear();
 			}
 		}
 		return target;

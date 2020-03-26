@@ -1,10 +1,9 @@
 package com.mantledillusion.data.saman;
 
-import org.junit.Before;
-
 import com.mantledillusion.data.saman.interfaces.BiConverter;
 import com.mantledillusion.data.saman.obj.SourcePojo;
 import com.mantledillusion.data.saman.obj.TargetPojo;
+import org.junit.jupiter.api.BeforeEach;
 
 public class AbstractConversionTest {
 
@@ -19,18 +18,18 @@ public class AbstractConversionTest {
 
 	protected ProcessingService service;
 	
-	@Before
+	@BeforeEach
 	public void before() {
 		this.service = new DefaultProcessingService(ProcessorRegistry.of(new BiConverter<SourcePojo, TargetPojo>() {
 
 			@Override
 			public TargetPojo toTarget(SourcePojo source, ProcessingDelegate context) throws Exception {
-				return new TargetPojo(source == null ? null : source.id);
+				return context.get(TargetPojo.class, new TargetPojo(source == null ? null : source.id));
 			}
 
 			@Override
 			public SourcePojo toSource(TargetPojo target, ProcessingDelegate context) throws Exception {
-				return new SourcePojo(target == null ? null : target.id);
+				return context.get(SourcePojo.class, new SourcePojo(target == null ? null : target.id));
 			}
 		}));
 	}
