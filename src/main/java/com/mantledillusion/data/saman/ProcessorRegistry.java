@@ -3,10 +3,7 @@ package com.mantledillusion.data.saman;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import org.apache.commons.lang3.reflect.TypeUtils;
 
@@ -20,6 +17,20 @@ import com.mantledillusion.data.saman.exception.ProcessorTypeException;
  * A {@link Map} style registry for {@link Processor}s.
  */
 public class ProcessorRegistry {
+
+	private static final Map<Class<?>, Class<?>> WRAPPER_TYPES;
+	static {
+		Map<Class<?>, Class<?>> wrapperTypes = new HashMap<>();
+		wrapperTypes.put(boolean.class, Boolean.class);
+		wrapperTypes.put(char.class, Character.class);
+		wrapperTypes.put(byte.class, Byte.class);
+		wrapperTypes.put(short.class, Short.class);
+		wrapperTypes.put(int.class, Integer.class);
+		wrapperTypes.put(long.class, Long.class);
+		wrapperTypes.put(float.class, Float.class);
+		wrapperTypes.put(double.class, Double.class);
+		WRAPPER_TYPES = Collections.unmodifiableMap(wrapperTypes);
+	}
 
 	private final Map<Class<?>, Map<Class<?>, Processor<?, ?>>> processorRegistry;
 
@@ -52,6 +63,7 @@ public class ProcessorRegistry {
 	public <SourceType, TargetType> Processor<SourceType, TargetType> identifyProcessor(Class<SourceType> sourceType,
 			Class<TargetType> targetType) throws NoProcessorException {
 		Class<? super SourceType> workType = sourceType;
+		targetType = WRAPPER_TYPES.containsKey(targetType) ? (Class<TargetType>) WRAPPER_TYPES.get(targetType) : targetType;
 		if (this.processorRegistry.containsKey(targetType)) {
 			Map<Class<?>, Processor<?, ?>> targetTypeProcessors = this.processorRegistry
 					.get(targetType);
