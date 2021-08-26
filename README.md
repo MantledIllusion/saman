@@ -3,17 +3,41 @@ Saman is a lightweight library for data processing like conversion, persisting o
 
 Albizia Saman, originally Samanea Saman and called 'árbol de la lluvia' ('The Rain Tree') by locals is a plant originated in middle and south america. Besides its characteristic to close its leaves when its raining, the Albizia Saman is also the plant that is suspected to be able to convert more CO2 into its structure than any other plant on the world, nearly twice as much as the second contestant that is bamboo.
 
+```xml
+<dependency>
+    <groupId>com.mantledillusion.data</groupId>
+    <artifactId>saman</artifactId>
+</dependency>
+```
+
+Get the newest version at [mvnrepository.com/saman](https://mvnrepository.com/artifact/com.mantledillusion.data/saman)
+
 ## Anonymous data processing
 
 The base principle of Saman is the same as in Spring's _**ConversionService**_: provide a generic entry point for every consumer in need for data processing, but hide the component that actually processes the data.
 
-In Saman, this entry point is the _com.mantledillusion.data.saman.**ProcessingService**_ interface, with  _com.mantledillusion.data.saman.**DefaultProcessingService**_ being the reference implementation. 
+In Saman, this entry point is the _com.mantledillusion.data.saman.**ProcessingService**_ interface, with  _com.mantledillusion.data.saman.**DefaultProcessingService**_ being the reference implementation:
+
+```java
+ProcessorRegistry registry = ProcessorRegistry.of(
+        new TypeAToBConverter()
+);
+ProcessingService processingService = new DefaultProcessingService(registry);
+
+TypeA a = new TypeA();
+TypeB b = processingService.process(a, TypeB.class);
+```
 
 The **_ProcessingService_** implementations are expected to hold a set of _com.mantledillusion.data.saman.ProcessingService.**Processor**_ implementations. The _**Processor**\<SourceType, TargetType>_ is a generic interface for processing data from _SourceType_ to _TargetType_.
 
 The class _com.mantledillusion.data.saman.**ProcessorRegistry**_ is able to build a matrix of _SourceType_ &#8594; _TargetType_ mappings out of a set of **_Processors_**, from which it is then able to provide a matching _**Processor**_ implementation for every specific _SourceType/TargetType_ combination. With this feature, _**ProcessorRegistry**_ can be used by _**ProcessingService**_ implementations to locate the correct _**Processor**_ for a processing; **_DefaultProcessingService_** is implemented that way.
 
-The package _com.mantledillusion.data.saman.interfaces_ contains several _**Processor**_ extending interfaces for the most common use cases.
+The package _com.mantledillusion.data.saman.interfaces_ contains several _**Processor**_ extending interfaces for the most common use cases:
+- **_Converter_** : A simple converter from type A to B
+- **_BiConverter_**: A converter from type A to B and vice versa
+- **_Synchronizer_**: A converter that is able to synchronize data from a type A object into a fetchable pre-existing type B object
+- **_BiSynchronizer_**: A converter that is able to synchronize data from a fetchable pre-existing type A object into a fetchable pre-existing type B object and vice versa
+- **_Persistor_**: A converter that is able to synchronize data from a type A object into a fetchable pre-existing type B object and convert it back to type A
 
 Using the _**ProcessorRegistry**_ containing the matrix of _**Processor**_ implementations, The _**ProcessingService**_ is able to provide generic processing to consumers over its _process*()_ methods. The setup has several benefits over simply implementing a non-generic set of converters and calling them individually:
 - One reference to the _**ProcessingService**_ is enough for every consumer instead of referencing and calling multiple components directly.
@@ -27,7 +51,27 @@ The regular data type for ***Processor***s are self implemented POJOs which, in 
 
 In Saman, ***Processor***s are not only called with the source object to process, but also with the instance of _**ProcessingService**_ performing the processing. As a result, a Processor for _**PojoA**_ might process that type's primitive fields, but will call the _**ProcessingService**_ to find a Processor for the processing of _**PojoB**_.
 
-This approach has multple benefits:
+```java
+class TypeAToTypeBConverter implements Converter<TypeA, TypeB> {
+
+    public TypeB toTarget(TypeA source, ProcessingDelegate context) throws Exception {
+        TypeB target = new TypeB();
+        target.setD(context.process(source.getC(), TypeD.class)); // <-- The context will find the TypeCToTypeDConverter
+        return target;
+    }
+}
+
+class TypeCToTypeDConverter implements Converter<TypeC, TypeD> {
+
+    public TypeD toTarget(TypeC source, ProcessingDelegate context) throws Exception {
+        TypeD target = new TypeD();
+        target.setStringValue(source.getStringValue());
+        return target;
+    }
+}
+```
+
+This approach has multiple benefits:
 - "**Separation of Concerns**" is enforced inheritly for processing code.
 - More code is reused, as ***Processor***s can be triggered by consumers and by other ***Processor***s as well.
 - _**Processor**_ code becomes much cleaner.
@@ -38,7 +82,30 @@ The "**Separation of Concerns**" approach of Saman works great and has a lot of 
 
 But occasionally, there are situations in which it is necessary for a Processor to know the context it is operating in. Imagine a ProcessingService containing 2 ***Synchonizer***s for the types _**DatabaseEntityA**_ and _**DatabaseEntityB**_, where A contains a _**List**_ of B. The _**Processor**_ for B might be interested in the instance of A its instance of B belongs to; for example, the validation of B differs in relation to how A's fields are set. Because of "**Separation of Concerns**", if B does not contain its A instance, there is no way a _**Processor**_ could get that instance of A.
 
-This is where process contexting steps in. The _**ProcessingDelegate**_ given to ***Processor***s is not only able to perform sub-instance processing; it also holds a map of objects that defines the context the processing takes place in.
+This is where process contexting steps in. The _**ProcessingDelegate**_ given to ***Processor***s is not only able to perform sub-instance processing; it also holds a map of objects that defines the context the processing takes place in:
+
+```java
+class TypeAToTypeBConverter implements Converter<TypeA, TypeB> {
+
+    public TypeB toTarget(TypeA source, ProcessingDelegate context) throws Exception {
+        TypeB target = new TypeB();
+        
+        context.set(target); // <- Adds the instance of B to the context
+        target.setD(context.process(source.getC(), TypeD.class));
+        
+        return target;
+    }
+}
+
+class TypeCToTypeDConverter implements Converter<TypeC, TypeD> {
+
+    public TypeD toTarget(TypeC source, ProcessingDelegate context) throws Exception {
+        TypeD target = new TypeD();
+        target.setParent(context.get(TypeB.class)); // Retrieves the instance of B from the context
+        return target;
+    }
+}
+```
 
 So in the scenario of above, the _**Processor**_ of A could add the A instance to the context, so the _**Processor**_ of B is able to access it again.
 
